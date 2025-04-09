@@ -129,7 +129,7 @@ export function DataGrid({ data, isLoading, materials }: DataGridProps) {
               <tr key={rowIndex} className="hover:bg-gray-50">
                 {columns.map((column) => (
                   <td key={`${rowIndex}-${column}`} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {row[column as keyof typeof row]}
+                    {row[column as keyof typeof row] !== undefined ? row[column as keyof typeof row] : ""}
                   </td>
                 ))}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.MaterialName}</td>
