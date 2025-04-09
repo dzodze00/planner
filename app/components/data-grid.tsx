@@ -132,7 +132,7 @@ export function DataGrid({ data, isLoading, materials }: DataGridProps) {
                     {row[column as keyof typeof row] !== undefined ? row[column as keyof typeof row] : ""}
                   </td>
                 ))}
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.MaterialName}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">{row.MaterialName}</td>
               </tr>
             ))}
           </tbody>
