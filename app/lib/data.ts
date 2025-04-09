@@ -37,7 +37,7 @@ export async function fetchScenarioData(
       : scenarioRawData
 
   // Filter by fill rate if specified
-  const filteredByFillRate = filteredTimeSeriesData.filter((d) => d.fillRate >= filterOptions.minFillRate)
+  const filteredByFillRate = filteredTimeSeriesData.filter((d) => (d.fillRate ?? 0) >= filterOptions.minFillRate)
 
   // Simulate a delay to show loading state (optional - can be removed)
   await new Promise((resolve) => setTimeout(resolve, 300))
