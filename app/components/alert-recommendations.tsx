@@ -65,7 +65,7 @@ export function AlertRecommendation({
         // Update production data if it exists for this material
         const prodIndex = changes.productionData.findIndex((d) => d.week === alert.week)
         if (prodIndex !== -1 && changes.productionData[prodIndex][alert.item]) {
-          changes.productionData[prodIndex][alert.item] =
+          changes.productionData[prodIndex][alert.item as keyof (typeof changes.productionData)[typeof prodIndex]] =
             (changes.productionData[prodIndex][alert.item] as number) + supplyIncrease
         }
 
@@ -101,7 +101,8 @@ export function AlertRecommendation({
         if (prodIndex !== -1 && changes.productionData[prodIndex][alert.item]) {
           const currentProduction = changes.productionData[prodIndex][alert.item] as number
           const increase = Math.round(currentProduction * 0.2)
-          changes.productionData[prodIndex][alert.item] = currentProduction + increase
+          changes.productionData[prodIndex][alert.item as keyof (typeof changes.productionData)[typeof prodIndex]] =
+            currentProduction + increase
 
           // Also update supply in time series
           const currentSupply = changes.timeSeriesData[weekIndex].supply
@@ -162,7 +163,8 @@ export function AlertRecommendation({
           const currentProduction = changes.productionData[prodIndex][alert.item] as number
           // Reduce by 10% to optimize
           const reduction = Math.round(currentProduction * 0.1)
-          changes.productionData[prodIndex][alert.item] = currentProduction - reduction
+          changes.productionData[prodIndex][alert.item as keyof (typeof changes.productionData)[typeof prodIndex]] =
+            currentProduction - reduction
 
           // Update change details
           changeDetails.changeType = "Order Quantity Optimization"
