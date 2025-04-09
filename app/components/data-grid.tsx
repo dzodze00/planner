@@ -58,9 +58,12 @@ export function DataGrid({ data, isLoading, materials }: DataGridProps) {
   // Sort data if a sort column is selected
   const sortedData = sortColumn
     ? [...filteredData].sort((a, b) => {
+        // Check if the property exists in the objects
+        if (!(sortColumn in a) || !(sortColumn in b)) return 0
+
         // Use type assertion to tell TypeScript that sortColumn is a valid key
-        const aValue = sortColumn in a ? a[sortColumn as keyof typeof a] : null
-        const bValue = sortColumn in b ? b[sortColumn as keyof typeof b] : null
+        const aValue = a[sortColumn as keyof typeof a]
+        const bValue = b[sortColumn as keyof typeof b]
 
         if (typeof aValue === "number" && typeof bValue === "number") {
           return sortDirection === "asc" ? aValue - bValue : bValue - aValue
