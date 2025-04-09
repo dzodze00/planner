@@ -10,7 +10,7 @@ export function ProcessFlow() {
     cathode: false,
   })
 
-  const toggleStep = (step) => {
+  const toggleStep = (step: string) => {
     setExpandedSteps({
       ...expandedSteps,
       [step]: !expandedSteps[step],
