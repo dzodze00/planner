@@ -111,6 +111,9 @@ export default function Dashboard() {
     ])
   }
 
+  // Debug data loading
+  console.log("Scenario Data:", scenarioData?.timeSeriesData?.length || 0, "items")
+
   return (
     <div className="flex flex-col min-h-screen">
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
@@ -299,6 +302,7 @@ export default function Dashboard() {
                   data={scenarioData}
                   compareData={compareData}
                   weekRange={weekRange}
+                  materials={materials}
                 />
               )}
             </CardContent>
@@ -416,7 +420,7 @@ export default function Dashboard() {
                       name: "Supporting Alerts",
                       BASE: alertSummary.BASE.supporting,
                       S1: alertSummary.S1.supporting,
-                      S2: alertSummary.S2.critical,
+                      S2: alertSummary.S2.supporting,
                       S3: alertSummary.S3.supporting,
                       S4: alertSummary.S4.supporting,
                     },
