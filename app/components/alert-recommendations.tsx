@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { AlertCircle, TrendingUp, BarChart3, Check } from 'lucide-react'
+import { AlertCircle, TrendingUp, BarChart3, Check } from "lucide-react"
 import type { AlertData, MaterialItem, ScenarioData } from "../types"
 
 interface AlertRecommendationsProps {
@@ -36,7 +36,7 @@ export function AlertRecommendation({
     }
 
     const weekIndex = changes.timeSeriesData.findIndex((d) => d.week === alert.week)
-    if (weekIndex === -1) return changes
+    if (weekIndex === -1) return null
 
     const changeDetails = {
       alertId: alert.id,
