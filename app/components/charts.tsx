@@ -18,6 +18,22 @@ import {
 } from "recharts"
 import type { Scenario } from "../types"
 
+// Define the MaterialItem interface
+interface MaterialItem {
+  id: string
+  name: string
+  type: string
+}
+
+// Update the BarChart props interface:
+interface BarChartProps {
+  data: any[]
+  compareData?: any[]
+  scenario?: Scenario
+  compareScenario?: Scenario | null
+  materials?: MaterialItem[] // Add materials prop
+}
+
 // Add this after the existing imports and before the LineChart component definition:
 interface LineChartProps {
   scenario: Scenario
@@ -30,19 +46,15 @@ interface LineChartProps {
   selectedMaterial?: string // Add selectedMaterial prop
 }
 
-// Update the BarChart props interface:
-interface BarChartProps {
-  data: any[]
-  compareData?: any[]
-  scenario?: Scenario
-  compareScenario?: Scenario | null
-  materials?: MaterialItem[] // Add materials prop
-}
-
-// Define the MaterialItem interface
-interface MaterialItem {
-  id: string
-  name: string
+// Helper function to get material name
+const getMaterialName = (key: string, materialsArray: MaterialItem[] = []) => {
+  // Check if the key is a material ID
+  const material = materialsArray.find((m) => m.id === key)
+  if (material) {
+    return material.name
+  }
+  // If not a material ID, return the key as is
+  return key
 }
 
 // Update the BarChart function signature:
@@ -111,7 +123,7 @@ export function BarChart({ data = [], compareData, scenario, compareScenario, ma
                 key={`${scenario}-${key}`}
                 dataKey={key}
                 fill={colors[index % colors.length]}
-                name={`${key} (${scenario})`}
+                name={getMaterialName(key, materials)}
               />
             ))}
 
@@ -124,7 +136,7 @@ export function BarChart({ data = [], compareData, scenario, compareScenario, ma
                   key={`${compareScenario}-${key}`}
                   dataKey={key}
                   fill={colors[(index + 2) % colors.length]}
-                  name={`${key} (${compareScenario})`}
+                  name={`${getMaterialName(key, materials)} (${compareScenario})`}
                   fillOpacity={0.7}
                   stroke={colors[(index + 2) % colors.length]}
                   strokeWidth={2}
@@ -133,17 +145,6 @@ export function BarChart({ data = [], compareData, scenario, compareScenario, ma
         </RechartsBarChart>
       </ResponsiveContainer>
     )
-  }
-
-  // Add this helper function before the BarChart return statement:
-  const getMaterialName = (key: string, materialsArray: any[] = []) => {
-    // Check if the key is a material ID
-    const material = materialsArray.find((m) => m.id === key)
-    if (material) {
-      return material.name
-    }
-    // If not a material ID, return the key as is
-    return key
   }
 
   // Default case - just show the data
@@ -179,7 +180,7 @@ export function BarChart({ data = [], compareData, scenario, compareScenario, ma
   )
 }
 
-// Then update the LineChart function signature to include these new props:
+// Then update the LineChart function to use the actual data:
 export function LineChart({
   scenario,
   compareScenario,
@@ -190,26 +191,18 @@ export function LineChart({
   materials = [],
   selectedMaterial,
 }: LineChartProps) {
-  // This would use the actual data from the CSV files
-  // For now, using placeholder data
-  const mockData = [
-    { week: "14", demand: 1000, supply: 950, inventory: 200 },
-    { week: "15", demand: 1100, supply: 1050, inventory: 150 },
-    { week: "16", demand: 1200, supply: 1150, inventory: 100 },
-    { week: "17", demand: 1150, supply: 1200, inventory: 150 },
-    { week: "18", demand: 1250, supply: 1300, inventory: 200 },
-    { week: "19", demand: 1300, supply: 1350, inventory: 250 },
-    { week: "20", demand: 1350, supply: 1400, inventory: 300 },
-    { week: "21", demand: 1400, supply: 1450, inventory: 350 },
-    { week: "22", demand: 1450, supply: 1500, inventory: 400 },
-    { week: "23", demand: 1500, supply: 1550, inventory: 450 },
-    { week: "24", demand: 1550, supply: 1600, inventory: 500 },
-  ]
+  // Use the actual data from props instead of mockData
+  const chartData = data?.timeSeriesData || []
+  const compareChartData = compareData?.timeSeriesData || []
 
-  // Filter data by week range
-  const filteredData = mockData.filter(
-    (d) => Number.parseInt(d.week) >= weekRange[0] && Number.parseInt(d.week) <= weekRange[1],
-  )
+  // If no data is available, show a message
+  if (chartData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-[300px] bg-gray-50 rounded-md">
+        <p className="text-gray-500">No data available</p>
+      </div>
+    )
+  }
 
   // Determine which lines to show based on dataType
   const getLines = () => {
@@ -230,7 +223,7 @@ export function LineChart({
         <Line
           key="production"
           type="monotone"
-          dataKey="production"
+          dataKey="supply" // Use supply as production
           stroke="#82ca9d"
           name={`Production (${scenario})`}
         />,
@@ -246,7 +239,7 @@ export function LineChart({
 
   // Get comparison lines if compareScenario is provided
   const getComparisonLines = () => {
-    if (!compareScenario) return []
+    if (!compareScenario || compareChartData.length === 0) return []
 
     if (dataType === "inventory") {
       return [
@@ -266,7 +259,7 @@ export function LineChart({
         <Line
           key="compare-production"
           type="monotone"
-          dataKey="production"
+          dataKey="supply" // Use supply as production
           stroke="#ff7300"
           name={`Production (${compareScenario})`}
           strokeDasharray="5 5"
@@ -295,7 +288,7 @@ export function LineChart({
     ]
   }
 
-  // Add this before the return statement in LineChart:
+  // Format tooltip values
   const getTooltipFormatter = (value: any, name: string) => {
     if (name.includes("Inventory") && selectedMaterial) {
       const material = materials.find((m) => m.id === selectedMaterial)
@@ -307,7 +300,7 @@ export function LineChart({
   return (
     <ResponsiveContainer width="100%" height={300}>
       <RechartsLineChart
-        data={filteredData}
+        data={chartData}
         margin={{
           top: 5,
           right: 30,
@@ -317,7 +310,6 @@ export function LineChart({
       >
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="week" label={{ value: "Week", position: "insideBottomRight", offset: -5 }} />
-        {/* Find the YAxis component and update it: */}
         <YAxis
           label={{
             value:
@@ -330,7 +322,6 @@ export function LineChart({
             position: "insideLeft",
           }}
         />
-        {/* Then update the Tooltip component: */}
         <Tooltip formatter={getTooltipFormatter} />
         <Legend />
 
@@ -356,6 +347,15 @@ interface PieChartProps {
 
 export function PieChart({ data }: PieChartProps) {
   const COLORS = ["#FF8042", "#FFBB28", "#00C49F"]
+
+  // Handle empty data case
+  if (!data.length) {
+    return (
+      <div className="flex items-center justify-center h-[300px] bg-gray-50 rounded-md">
+        <p className="text-gray-500">No data available</p>
+      </div>
+    )
+  }
 
   return (
     <ResponsiveContainer width="100%" height={300}>
