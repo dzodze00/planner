@@ -416,7 +416,7 @@ export default function Dashboard() {
                       name: "Supporting Alerts",
                       BASE: alertSummary.BASE.supporting,
                       S1: alertSummary.S1.supporting,
-                      S2: alertSummary.S2.supporting,
+                      S2: alertSummary.S2.critical,
                       S3: alertSummary.S3.supporting,
                       S4: alertSummary.S4.supporting,
                     },
@@ -433,7 +433,9 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle>Production Orders by Week</CardTitle>
                 <p className="text-sm text-gray-500">
-                  Actual + Planned Production Orders for {scenariosList.find((s) => s.id === activeScenario)?.name}
+                  {filterOptions.materials.length > 0
+                    ? `Production orders for ${filterOptions.materials.length} selected material(s)`
+                    : `Actual + Planned Production Orders for ${scenariosList.find((s) => s.id === activeScenario)?.name}`}
                 </p>
               </CardHeader>
               <CardContent className="h-96">
@@ -447,6 +449,7 @@ export default function Dashboard() {
                     compareData={compareData?.productionData}
                     scenario={activeScenario}
                     compareScenario={compareMode ? compareScenario : null}
+                    materials={materials}
                   />
                 )}
               </CardContent>
@@ -462,6 +465,15 @@ export default function Dashboard() {
                 <p className="text-sm text-gray-500">
                   Planned inventory for {scenariosList.find((s) => s.id === activeScenario)?.name}
                 </p>
+                <p className="text-sm text-gray-500">
+                  {filterOptions.materials.length === 1
+                    ? `Showing inventory for ${
+                        materials.find((m) => m.id === filterOptions.materials[0])?.name || "selected material"
+                      }`
+                    : filterOptions.materials.length > 1
+                      ? "Showing aggregated inventory for selected materials"
+                      : "Showing total planned inventory across all materials"}
+                </p>
               </CardHeader>
               <CardContent className="h-96">
                 {isLoading ? (
@@ -476,6 +488,8 @@ export default function Dashboard() {
                     compareData={compareData}
                     weekRange={weekRange}
                     dataType="inventory"
+                    materials={materials}
+                    selectedMaterial={filterOptions.materials.length === 1 ? filterOptions.materials[0] : undefined}
                   />
                 )}
               </CardContent>
