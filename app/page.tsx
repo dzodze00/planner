@@ -40,20 +40,25 @@ export default function Dashboard() {
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true)
-      const data = await fetchScenarioData(activeScenario, filterOptions, weekRange)
-      setScenarioData(data)
+      try {
+        const data = await fetchScenarioData(activeScenario, filterOptions, weekRange)
+        setScenarioData(data)
 
-      if (compareMode) {
-        const compData = await fetchScenarioData(compareScenario, filterOptions, weekRange)
-        setCompareData(compData)
-      } else {
-        setCompareData(null)
+        if (compareMode) {
+          const compData = await fetchScenarioData(compareScenario, filterOptions, weekRange)
+          setCompareData(compData)
+        } else {
+          setCompareData(null)
+        }
+
+        // Set the current alerts for the active scenario
+        setCurrentAlerts(alertsData[activeScenario] || [])
+      } catch (error) {
+        console.error("Error loading data:", error)
+        // You could set an error state here if needed
+      } finally {
+        setIsLoading(false)
       }
-
-      // Set the current alerts for the active scenario
-      setCurrentAlerts(alertsData[activeScenario] || [])
-
-      setIsLoading(false)
     }
 
     loadData()
