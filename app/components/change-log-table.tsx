@@ -103,6 +103,7 @@ export function ChangeLogTable({ changes, materials }: ChangeLogTableProps) {
 
   // Helper function to get material name
   const getMaterialName = (materialId: string) => {
+    if (!materialId) return "Unknown"
     const material = materials.find((m) => m.id === materialId)
     return material ? material.name : materialId
   }
