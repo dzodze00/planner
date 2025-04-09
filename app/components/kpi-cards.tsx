@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, TrendingDown, Package, ShoppingCart, BarChart3, AlertCircle, ArrowRight } from 'lucide-react'
+import { TrendingUp, TrendingDown, Package, ShoppingCart, BarChart3, AlertCircle, ArrowRight } from "lucide-react"
 import type { Scenario } from "../types"
 import { kpiData } from "../data/dashboard-data"
 
