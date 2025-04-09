@@ -60,7 +60,7 @@ export interface ProductionDataPoint {
 
 // Raw data row
 export interface RawDataRow {
-  [key: string]: string | number // Column names as keys
+  [key: string]: string | number | undefined // Column names as keys
   Week?: string
   Material?: string
   Demand?: number
