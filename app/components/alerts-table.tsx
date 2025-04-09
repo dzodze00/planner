@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { AlertCircle, TrendingUp, BarChart3, Search, Download, ArrowRight } from 'lucide-react'
+import { AlertCircle, TrendingUp, BarChart3, Search, Download, ArrowRight } from "lucide-react"
 import type { Scenario, AlertData, FilterOptions, MaterialItem } from "../types"
 import { alertsData } from "../data/dashboard-data"
 
