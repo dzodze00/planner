@@ -33,8 +33,22 @@ export async function fetchScenarioData(
   // Filter by material if specified
   const filteredRawData =
     filterOptions.materials.length > 0
-      ? scenarioRawData.filter((d) => filterOptions.materials.includes(d.Material as string))
+      ? scenarioRawData.filter((d) => {
+          // Check if the Material property exists and is in the filtered materials
+          return d.Material && filterOptions.materials.includes(d.Material as string)
+        })
       : scenarioRawData
+
+  // Filter inventory data by selected materials if specified
+  const filteredInventoryData = { ...scenarioInventoryData }
+  if (filterOptions.materials.length > 0) {
+    // Only keep inventory data for selected materials
+    Object.keys(filteredInventoryData).forEach((materialId) => {
+      if (!filterOptions.materials.includes(materialId)) {
+        delete filteredInventoryData[materialId]
+      }
+    })
+  }
 
   // Filter by fill rate if specified
   const filteredByFillRate = filteredTimeSeriesData.filter((d) => (d.fillRate ?? 0) >= filterOptions.minFillRate)
@@ -45,7 +59,7 @@ export async function fetchScenarioData(
   return {
     timeSeriesData: filteredByFillRate,
     productionData: filteredProductionData,
-    inventoryData: scenarioInventoryData,
+    inventoryData: filteredInventoryData,
     alertData: alertsDataSource[scenario] || [],
     kpiData: scenarioKpiData,
     rawData: filteredRawData,
