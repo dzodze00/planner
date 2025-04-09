@@ -54,17 +54,21 @@ export function AlertRecommendation({
     if (alert.type === "Critical") {
       if (alert.description.includes("Supply less than Total Demand")) {
         // Increase supply by 15%
-        const currentSupply = changes.timeSeriesData[weekIndex].supply
+        const currentSupply = changes.timeSeriesData[weekIndex]?.supply || 0
         const supplyIncrease = Math.round(currentSupply * 0.15)
-        changes.timeSeriesData[weekIndex].supply += supplyIncrease
+        if (changes.timeSeriesData[weekIndex]) {
+          changes.timeSeriesData[weekIndex].supply += supplyIncrease
+        }
 
         // Update fill rate
-        const demand = changes.timeSeriesData[weekIndex].demand
-        changes.timeSeriesData[weekIndex].fillRate = changes.timeSeriesData[weekIndex].supply / demand
+        const demand = changes.timeSeriesData[weekIndex]?.demand || 0
+        if (changes.timeSeriesData[weekIndex]) {
+          changes.timeSeriesData[weekIndex].fillRate = changes.timeSeriesData[weekIndex].supply / demand || 0
+        }
 
         // Update production data if it exists for this material
         const prodIndex = changes.productionData.findIndex((d) => d.week === alert.week)
-        if (prodIndex !== -1 && changes.productionData[prodIndex][alert.item]) {
+        if (prodIndex !== -1 && changes.productionData[prodIndex]?.[alert.item]) {
           changes.productionData[prodIndex][alert.item as keyof (typeof changes.productionData)[typeof prodIndex]] =
             (changes.productionData[prodIndex][alert.item] as number) + supplyIncrease
         }
@@ -111,7 +115,7 @@ export function AlertRecommendation({
           // Update fill rate
           const demand = changes.timeSeriesData[weekIndex].demand
           const oldFillRate = changes.timeSeriesData[weekIndex].fillRate || 0
-          changes.timeSeriesData[weekIndex].fillRate = changes.timeSeriesData[weekIndex].supply / demand
+          changes.timeSeriesData[weekIndex].fillRate = changes.timeSeriesData[weekIndex].supply / demand || 0
 
           // Update change details
           changeDetails.changeType = "Capacity Increase"
@@ -149,7 +153,7 @@ export function AlertRecommendation({
         // Update fill rate
         const supply = changes.timeSeriesData[weekIndex].supply
         const oldFillRate = changes.timeSeriesData[weekIndex].fillRate || 0
-        changes.timeSeriesData[weekIndex].fillRate = supply / changes.timeSeriesData[weekIndex].demand
+        changes.timeSeriesData[weekIndex].fillRate = supply / changes.timeSeriesData[weekIndex].demand || 0
 
         // Update change details
         changeDetails.changeType = "Forecast Adjustment"
