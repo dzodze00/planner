@@ -95,6 +95,8 @@ export default function Dashboard() {
 
   // Handle data updates from recommendations
   const handleUpdateData = (newData: ScenarioData, changeDetails: any) => {
+    if (!newData) return
+
     setScenarioData(newData)
 
     // Add the change to the change log
