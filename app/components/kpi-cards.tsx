@@ -13,8 +13,24 @@ interface KpiCardsProps {
 
 export function KpiCards({ scenario, compareScenario, week }: KpiCardsProps) {
   // Use the data from our data file
-  const weekData = kpiData[scenario][week] || kpiData[scenario]["14"] // Default to week 14 if not found
-  const compareWeekData = compareScenario ? kpiData[compareScenario][week] || kpiData[compareScenario]["14"] : null
+  const weekData =
+    kpiData[scenario] && kpiData[scenario][week]
+      ? kpiData[scenario][week]
+      : (kpiData[scenario] && kpiData[scenario]["14"]) || {
+          totalDemand: 0,
+          fillRate: 0,
+          plannedInventory: 0,
+          onHandInventory: 0,
+          productionOrderQty: 0,
+          totalPlannedPurchases: 0,
+          unconsumedForecast: 0,
+          forecastError: 0,
+        }
+
+  const compareWeekData =
+    compareScenario && kpiData[compareScenario]
+      ? kpiData[compareScenario][week] || kpiData[compareScenario]["14"]
+      : null
 
   const getComparisonElement = (current: number, compare?: number) => {
     if (!compare && compare !== 0) return null
