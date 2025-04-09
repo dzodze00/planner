@@ -77,7 +77,9 @@ export function AlertRecommendation({
         changeDetails.changeType = "Supply Increase"
         changeDetails.before = currentSupply
         changeDetails.after = currentSupply + supplyIncrease
-        changeDetails.impact = `Increased supply by ${supplyIncrease} units (15%), improving fill rate from ${(currentSupply / demand).toFixed(2)} to ${(changes.timeSeriesData[weekIndex].fillRate).toFixed(2)}`
+        const oldFillRate = currentSupply / demand || 0
+        const newFillRate = changes.timeSeriesData[weekIndex]?.fillRate || 0
+        changeDetails.impact = `Increased supply by ${supplyIncrease} units (15%), improving fill rate from ${oldFillRate.toFixed(2)} to ${newFillRate.toFixed(2)}`
       } else if (alert.description.includes("Inventory not available")) {
         // Increase inventory by 100 units
         if (changes.inventoryData[alert.item]) {
@@ -116,12 +118,13 @@ export function AlertRecommendation({
           const demand = changes.timeSeriesData[weekIndex].demand
           const oldFillRate = changes.timeSeriesData[weekIndex].fillRate || 0
           changes.timeSeriesData[weekIndex].fillRate = changes.timeSeriesData[weekIndex].supply / demand || 0
+          const newFillRate = changes.timeSeriesData[weekIndex].fillRate || 0
 
           // Update change details
           changeDetails.changeType = "Capacity Increase"
           changeDetails.before = currentProduction
           changeDetails.after = currentProduction + increase
-          changeDetails.impact = `Increased production capacity by ${increase} units (20%), improving fill rate from ${oldFillRate.toFixed(2)} to ${changes.timeSeriesData[weekIndex].fillRate.toFixed(2)}`
+          changeDetails.impact = `Increased production capacity by ${increase} units (20%), improving fill rate from ${oldFillRate.toFixed(2)} to ${newFillRate.toFixed(2)}`
         }
       }
     } else if (alert.type === "Supporting") {
@@ -154,6 +157,7 @@ export function AlertRecommendation({
         const supply = changes.timeSeriesData[weekIndex].supply
         const oldFillRate = changes.timeSeriesData[weekIndex].fillRate || 0
         changes.timeSeriesData[weekIndex].fillRate = supply / changes.timeSeriesData[weekIndex].demand || 0
+        const newFillRate = changes.timeSeriesData[weekIndex].fillRate || 0
 
         // Update change details
         changeDetails.changeType = "Forecast Adjustment"
