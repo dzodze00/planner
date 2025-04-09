@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Search } from "lucide-react"
+import { Search } from 'lucide-react'
 import type { RawDataRow, MaterialItem } from "../types"
 
 interface DataGridProps {
@@ -55,16 +55,16 @@ export function DataGrid({ data, isLoading, materials }: DataGridProps) {
   // Sort data if a sort column is selected
   const sortedData = sortColumn
     ? [...filteredData].sort((a, b) => {
-        const aValue = a[sortColumn]
-        const bValue = b[sortColumn]
+        const aValue = sortColumn in a ? a[sortColumn as keyof typeof a] : null
+        const bValue = sortColumn in b ? b[sortColumn as keyof typeof b] : null
 
         if (typeof aValue === "number" && typeof bValue === "number") {
           return sortDirection === "asc" ? aValue - bValue : bValue - aValue
         }
 
         return sortDirection === "asc"
-          ? String(aValue).localeCompare(String(bValue))
-          : String(bValue).localeCompare(String(aValue))
+          ? String(aValue || "").localeCompare(String(bValue || ""))
+          : String(bValue || "").localeCompare(String(aValue || ""))
       })
     : filteredData
 
@@ -122,7 +122,7 @@ export function DataGrid({ data, isLoading, materials }: DataGridProps) {
               <tr key={rowIndex} className="hover:bg-gray-50">
                 {columns.map((column) => (
                   <td key={`${rowIndex}-${column}`} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {row[column]}
+                    {row[column as keyof typeof row]}
                   </td>
                 ))}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.MaterialName}</td>
