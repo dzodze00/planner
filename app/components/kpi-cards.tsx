@@ -17,7 +17,7 @@ export function KpiCards({ scenario, compareScenario, week }: KpiCardsProps) {
   const compareWeekData = compareScenario ? kpiData[compareScenario][week] || kpiData[compareScenario]["14"] : null
 
   const getComparisonElement = (current: number, compare?: number) => {
-    if (!compare) return null
+    if (!compare && compare !== 0) return null
 
     const diff = current - compare
     const percentDiff = (diff / compare) * 100
