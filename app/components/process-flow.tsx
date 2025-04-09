@@ -10,7 +10,8 @@ export function ProcessFlow() {
     cathode: false,
   })
 
-  const toggleStep = (step: string) => {
+  type StepKey = "cam" | "cathode"
+  const toggleStep = (step: StepKey) => {
     setExpandedSteps({
       ...expandedSteps,
       [step]: !expandedSteps[step],
