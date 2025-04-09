@@ -38,14 +38,16 @@ export function ChangeLogTable({ changes, materials }: ChangeLogTableProps) {
     }
 
     // For numeric fields
-    if (typeof a[sortField] === "number" && typeof b[sortField] === "number") {
-      return sortDirection === "asc" ? a[sortField] - b[sortField] : b[sortField] - a[sortField]
+    if (typeof a[sortField as keyof typeof a] === "number" && typeof b[sortField as keyof typeof b] === "number") {
+      return sortDirection === "asc"
+        ? (a[sortField as keyof typeof a] as number) - (b[sortField as keyof typeof b] as number)
+        : (b[sortField as keyof typeof b] as number) - (a[sortField as keyof typeof a] as number)
     }
 
     // For string fields
     return sortDirection === "asc"
-      ? String(a[sortField]).localeCompare(String(b[sortField]))
-      : String(b[sortField]).localeCompare(String(a[sortField]))
+      ? String(a[sortField as keyof typeof a] || "").localeCompare(String(b[sortField as keyof typeof b] || ""))
+      : String(b[sortField as keyof typeof b] || "").localeCompare(String(a[sortField as keyof typeof a] || ""))
   })
 
   // Function to handle sorting
