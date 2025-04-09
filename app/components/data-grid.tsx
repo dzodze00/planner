@@ -45,7 +45,7 @@ export function DataGrid({ data, isLoading, materials }: DataGridProps) {
       ...row,
       MaterialName: material ? material.name : "Unknown",
     }
-  })
+  }) as Array<RawDataRow & { MaterialName: string }>
 
   // Filter data based on search term
   const filteredData = enhancedData.filter((row) =>
@@ -126,7 +126,7 @@ export function DataGrid({ data, isLoading, materials }: DataGridProps) {
               <tr key={rowIndex} className="hover:bg-gray-50">
                 {columns.map((column) => (
                   <td key={`${rowIndex}-${column}`} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {row[column]}
+                    {row[column as keyof typeof row]}
                   </td>
                 ))}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.MaterialName}</td>
