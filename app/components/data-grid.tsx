@@ -58,16 +58,17 @@ export function DataGrid({ data, isLoading, materials }: DataGridProps) {
   // Sort data if a sort column is selected
   const sortedData = sortColumn
     ? [...filteredData].sort((a, b) => {
-        const aValue = a[sortColumn]
-        const bValue = b[sortColumn]
+        // Use type assertion to tell TypeScript that sortColumn is a valid key
+        const aValue = sortColumn in a ? a[sortColumn as keyof typeof a] : null
+        const bValue = sortColumn in b ? b[sortColumn as keyof typeof b] : null
 
         if (typeof aValue === "number" && typeof bValue === "number") {
           return sortDirection === "asc" ? aValue - bValue : bValue - aValue
         }
 
         return sortDirection === "asc"
-          ? String(aValue).localeCompare(String(bValue))
-          : String(bValue).localeCompare(String(aValue))
+          ? String(aValue || "").localeCompare(String(bValue || ""))
+          : String(bValue || "").localeCompare(String(aValue || ""))
       })
     : filteredData
 
