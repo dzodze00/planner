@@ -109,7 +109,7 @@ export function AlertRecommendation({
 
           // Update fill rate
           const demand = changes.timeSeriesData[weekIndex].demand
-          const oldFillRate = changes.timeSeriesData[weekIndex].fillRate
+          const oldFillRate = changes.timeSeriesData[weekIndex].fillRate || 0
           changes.timeSeriesData[weekIndex].fillRate = changes.timeSeriesData[weekIndex].supply / demand
 
           // Update change details
@@ -147,7 +147,7 @@ export function AlertRecommendation({
 
         // Update fill rate
         const supply = changes.timeSeriesData[weekIndex].supply
-        const oldFillRate = changes.timeSeriesData[weekIndex].fillRate
+        const oldFillRate = changes.timeSeriesData[weekIndex].fillRate || 0
         changes.timeSeriesData[weekIndex].fillRate = supply / changes.timeSeriesData[weekIndex].demand
 
         // Update change details
