@@ -18,14 +18,35 @@ import {
 } from "recharts"
 import type { Scenario } from "../types"
 
+// Add this after the existing imports and before the LineChart component definition:
+interface LineChartProps {
+  scenario: Scenario
+  compareScenario: Scenario | null
+  data: any | null
+  compareData: any | null
+  weekRange?: [number, number]
+  dataType?: "demand-supply" | "inventory" | "production"
+  materials?: MaterialItem[] // Add materials prop
+  selectedMaterial?: string // Add selectedMaterial prop
+}
+
+// Update the BarChart props interface:
 interface BarChartProps {
   data: any[]
   compareData?: any[]
   scenario?: Scenario
   compareScenario?: Scenario | null
+  materials?: MaterialItem[] // Add materials prop
 }
 
-export function BarChart({ data = [], compareData, scenario, compareScenario }: BarChartProps) {
+// Define the MaterialItem interface
+interface MaterialItem {
+  id: string
+  name: string
+}
+
+// Update the BarChart function signature:
+export function BarChart({ data = [], compareData, scenario, compareScenario, materials = [] }: BarChartProps) {
   const colors = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"]
 
   // Handle empty data case
@@ -114,6 +135,17 @@ export function BarChart({ data = [], compareData, scenario, compareScenario }: 
     )
   }
 
+  // Add this helper function before the BarChart return statement:
+  const getMaterialName = (key: string, materialsArray: any[] = []) => {
+    // Check if the key is a material ID
+    const material = materialsArray.find((m) => m.id === key)
+    if (material) {
+      return material.name
+    }
+    // If not a material ID, return the key as is
+    return key
+  }
+
   // Default case - just show the data
   return (
     <ResponsiveContainer width="100%" height={300}>
@@ -134,21 +166,20 @@ export function BarChart({ data = [], compareData, scenario, compareScenario }: 
         {data.length > 0 &&
           Object.keys(data[0])
             .filter((key) => key !== "name" && key !== "week")
-            .map((key, index) => <Bar key={key} dataKey={key} fill={colors[index % colors.length]} name={key} />)}
+            .map((key, index) => (
+              <Bar
+                key={key}
+                dataKey={key}
+                fill={colors[index % colors.length]}
+                name={getMaterialName(key, materials)}
+              />
+            ))}
       </RechartsBarChart>
     </ResponsiveContainer>
   )
 }
 
-interface LineChartProps {
-  scenario: Scenario
-  compareScenario: Scenario | null
-  data: any | null
-  compareData: any | null
-  weekRange?: [number, number]
-  dataType?: "demand-supply" | "inventory" | "production"
-}
-
+// Then update the LineChart function signature to include these new props:
 export function LineChart({
   scenario,
   compareScenario,
@@ -156,6 +187,8 @@ export function LineChart({
   compareData,
   weekRange = [14, 24],
   dataType = "demand-supply",
+  materials = [],
+  selectedMaterial,
 }: LineChartProps) {
   // This would use the actual data from the CSV files
   // For now, using placeholder data
@@ -262,6 +295,15 @@ export function LineChart({
     ]
   }
 
+  // Add this before the return statement in LineChart:
+  const getTooltipFormatter = (value: any, name: string) => {
+    if (name.includes("Inventory") && selectedMaterial) {
+      const material = materials.find((m) => m.id === selectedMaterial)
+      return [`${value} units`, material ? `${material.name} Inventory` : name]
+    }
+    return [value, name]
+  }
+
   return (
     <ResponsiveContainer width="100%" height={300}>
       <RechartsLineChart
@@ -275,8 +317,21 @@ export function LineChart({
       >
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="week" label={{ value: "Week", position: "insideBottomRight", offset: -5 }} />
-        <YAxis label={{ value: "Quantity", angle: -90, position: "insideLeft" }} />
-        <Tooltip />
+        {/* Find the YAxis component and update it: */}
+        <YAxis
+          label={{
+            value:
+              dataType === "inventory"
+                ? "Inventory Level (units)"
+                : dataType === "production"
+                  ? "Production Quantity (units)"
+                  : "Quantity (units)",
+            angle: -90,
+            position: "insideLeft",
+          }}
+        />
+        {/* Then update the Tooltip component: */}
+        <Tooltip formatter={getTooltipFormatter} />
         <Legend />
 
         {/* Add a reference line at y=0 */}
