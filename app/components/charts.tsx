@@ -25,8 +25,17 @@ interface BarChartProps {
   compareScenario?: Scenario | null
 }
 
-export function BarChart({ data, compareData, scenario, compareScenario }: BarChartProps) {
+export function BarChart({ data = [], compareData, scenario, compareScenario }: BarChartProps) {
   const colors = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"]
+
+  // Handle empty data case
+  if (!data.length) {
+    return (
+      <div className="flex items-center justify-center h-[300px] bg-gray-50 rounded-md">
+        <p className="text-gray-500">No data available</p>
+      </div>
+    )
+  }
 
   // If we have scenario data, it's a comparison between scenarios
   if (scenario && !compareScenario) {
@@ -57,7 +66,7 @@ export function BarChart({ data, compareData, scenario, compareScenario }: BarCh
   }
 
   // If we have compareScenario, it's a comparison between two scenarios
-  if (scenario && compareScenario) {
+  if (scenario && compareScenario && data.length > 0) {
     return (
       <ResponsiveContainer width="100%" height={300}>
         <RechartsBarChart
@@ -86,6 +95,7 @@ export function BarChart({ data, compareData, scenario, compareScenario }: BarCh
             ))}
 
           {compareData &&
+            compareData.length > 0 &&
             Object.keys(compareData[0])
               .filter((key) => key !== "week")
               .map((key, index) => (
@@ -121,11 +131,10 @@ export function BarChart({ data, compareData, scenario, compareScenario }: BarCh
         <YAxis />
         <Tooltip />
         <Legend />
-        {Object.keys(data[0])
-          .filter((key) => key !== "name" && key !== "week")
-          .map((key, index) => (
-            <Bar key={key} dataKey={key} fill={colors[index % colors.length]} name={key} />
-          ))}
+        {data.length > 0 &&
+          Object.keys(data[0])
+            .filter((key) => key !== "name" && key !== "week")
+            .map((key, index) => <Bar key={key} dataKey={key} fill={colors[index % colors.length]} name={key} />)}
       </RechartsBarChart>
     </ResponsiveContainer>
   )
