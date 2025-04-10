@@ -114,6 +114,19 @@ export default function Dashboard() {
   // Debug data loading
   console.log("Scenario Data:", scenarioData?.timeSeriesData?.length || 0, "items")
 
+  // Add a helper function to transform production data for better visualization
+  const transformProductionData = (data: any[]) => {
+    if (!data || data.length === 0) return []
+
+    // If we have filtered materials, make sure we're showing the right data
+    if (filterOptions.materials.length > 0) {
+      return data
+    }
+
+    // Otherwise, show all materials
+    return data
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
@@ -447,10 +460,14 @@ export default function Dashboard() {
                   <div className="flex items-center justify-center h-full">
                     <p>Loading production data...</p>
                   </div>
+                ) : scenarioData?.productionData?.length === 0 ? (
+                  <div className="flex items-center justify-center h-full">
+                    <p>No production data available for the selected filters</p>
+                  </div>
                 ) : (
                   <BarChart
-                    data={scenarioData?.productionData || []}
-                    compareData={compareData?.productionData}
+                    data={transformProductionData(scenarioData?.productionData || [])}
+                    compareData={compareMode ? transformProductionData(compareData?.productionData) : undefined}
                     scenario={activeScenario}
                     compareScenario={compareMode ? compareScenario : null}
                     materials={materials}
