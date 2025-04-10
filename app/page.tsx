@@ -165,61 +165,212 @@ export default function Dashboard() {
     })
   }
 
-  // Function to generate scenario comparison data based on selected type and filters
+  // Find the getScenarioComparisonData function and update it to better handle material types and stacking
+
+  // Update the getScenarioComparisonData function to better handle material types and stacking
   const getScenarioComparisonData = () => {
     if (scenarioComparisonType === "alerts") {
-      return [
-        {
-          name: "Critical Alerts",
-          BASE: alertSummary.BASE.critical,
-          S1: alertSummary.S1.critical,
-          S2: alertSummary.S2.critical,
-          S3: alertSummary.S3.critical,
-          S4: alertSummary.S4.critical,
-        },
-        {
-          name: "Capacity Alerts",
-          BASE: alertSummary.BASE.capacity,
-          S1: alertSummary.S1.capacity,
-          S2: alertSummary.S2.capacity,
-          S3: alertSummary.S3.capacity,
-          S4: alertSummary.S4.capacity,
-        },
-        {
-          name: "Supporting Alerts",
-          BASE: alertSummary.BASE.supporting,
-          S1: alertSummary.S1.supporting,
-          S2: alertSummary.S2.supporting,
-          S3: alertSummary.S3.supporting,
-          S4: alertSummary.S4.supporting,
-        },
-      ]
+      return {
+        data: [
+          {
+            name: "Critical Alerts",
+            BASE: alertSummary.BASE.critical,
+            S1: alertSummary.S1.critical,
+            S2: alertSummary.S2.critical,
+            S3: alertSummary.S3.critical,
+            S4: alertSummary.S4.critical,
+          },
+          {
+            name: "Capacity Alerts",
+            BASE: alertSummary.BASE.capacity,
+            S1: alertSummary.S1.capacity,
+            S2: alertSummary.S2.capacity,
+            S3: alertSummary.S3.capacity,
+            S4: alertSummary.S4.capacity,
+          },
+          {
+            name: "Supporting Alerts",
+            BASE: alertSummary.BASE.supporting,
+            S1: alertSummary.S1.supporting,
+            S2: alertSummary.S2.supporting,
+            S3: alertSummary.S3.supporting,
+            S4: alertSummary.S4.supporting,
+          },
+        ],
+        stacked: false,
+        materialNames: [],
+      }
     } else if (scenarioComparisonType === "materials") {
       // Use selected materials from filter if available, otherwise group by type
       if (filterOptions.materials.length > 0) {
-        return filterOptions.materials.map((materialId) => {
-          const material = materials.find((m) => m.id === materialId)
-          const materialName = material ? material.name : materialId
+        // Check if we have materials from different types (FG, Intermediate, Raw)
+        const selectedMaterialsInfo = filterOptions.materials.map(
+          (id) => materials.find((m) => m.id === id) || { id, name: id, type: "Unknown" },
+        )
 
-          // Get average inventory for this material across scenarios
-          const getAverageInventory = (scenario: Scenario, materialId: string) => {
-            if (!scenarioData?.inventoryData || !scenarioData.inventoryData[materialId]) return 0
+        const hasMultipleTypes = new Set(selectedMaterialsInfo.map((m) => m.type)).size > 1
 
-            const inventoryValues = scenarioData.inventoryData[materialId]
-            return inventoryValues.length > 0
-              ? Math.round(inventoryValues.reduce((a, b) => a + b, 0) / inventoryValues.length)
-              : 0
+        if (hasMultipleTypes) {
+          // Group by material type for stacked bar chart
+          const materialsByType = {
+            FG: selectedMaterialsInfo.filter((m) => m.type === "FG"),
+            Intermediate: selectedMaterialsInfo.filter((m) => m.type === "Intermediate"),
+            Raw: selectedMaterialsInfo.filter((m) => m.type === "Raw"),
           }
 
+          // Create data for stacked bar chart
           return {
-            name: materialName,
-            BASE: getAverageInventory("BASE", materialId),
-            S1: getAverageInventory("S1", materialId),
-            S2: getAverageInventory("S2", materialId),
-            S3: getAverageInventory("S3", materialId),
-            S4: getAverageInventory("S4", materialId),
+            data: [
+              {
+                name: "Inventory by Material Type",
+                "Finished Goods":
+                  materialsByType.FG.length > 0
+                    ? getAverageInventoryForMaterials(
+                        "BASE",
+                        materialsByType.FG.map((m) => m.id),
+                      )
+                    : 0,
+                Intermediates:
+                  materialsByType.Intermediate.length > 0
+                    ? getAverageInventoryForMaterials(
+                        "BASE",
+                        materialsByType.Intermediate.map((m) => m.id),
+                      )
+                    : 0,
+                "Raw Materials":
+                  materialsByType.Raw.length > 0
+                    ? getAverageInventoryForMaterials(
+                        "BASE",
+                        materialsByType.Raw.map((m) => m.id),
+                      )
+                    : 0,
+
+                // Add other scenarios
+                "S1-FG":
+                  materialsByType.FG.length > 0
+                    ? getAverageInventoryForMaterials(
+                        "S1",
+                        materialsByType.FG.map((m) => m.id),
+                      )
+                    : 0,
+                "S1-INT":
+                  materialsByType.Intermediate.length > 0
+                    ? getAverageInventoryForMaterials(
+                        "S1",
+                        materialsByType.Intermediate.map((m) => m.id),
+                      )
+                    : 0,
+                "S1-RAW":
+                  materialsByType.Raw.length > 0
+                    ? getAverageInventoryForMaterials(
+                        "S1",
+                        materialsByType.Raw.map((m) => m.id),
+                      )
+                    : 0,
+
+                "S2-FG":
+                  materialsByType.FG.length > 0
+                    ? getAverageInventoryForMaterials(
+                        "S2",
+                        materialsByType.FG.map((m) => m.id),
+                      )
+                    : 0,
+                "S2-INT":
+                  materialsByType.Intermediate.length > 0
+                    ? getAverageInventoryForMaterials(
+                        "S2",
+                        materialsByType.Intermediate.map((m) => m.id),
+                      )
+                    : 0,
+                "S2-RAW":
+                  materialsByType.Raw.length > 0
+                    ? getAverageInventoryForMaterials(
+                        "S2",
+                        materialsByType.Raw.map((m) => m.id),
+                      )
+                    : 0,
+
+                "S3-FG":
+                  materialsByType.FG.length > 0
+                    ? getAverageInventoryForMaterials(
+                        "S3",
+                        materialsByType.FG.map((m) => m.id),
+                      )
+                    : 0,
+                "S3-INT":
+                  materialsByType.Intermediate.length > 0
+                    ? getAverageInventoryForMaterials(
+                        "S3",
+                        materialsByType.Intermediate.map((m) => m.id),
+                      )
+                    : 0,
+                "S3-RAW":
+                  materialsByType.Raw.length > 0
+                    ? getAverageInventoryForMaterials(
+                        "S3",
+                        materialsByType.Raw.map((m) => m.id),
+                      )
+                    : 0,
+
+                "S4-FG":
+                  materialsByType.FG.length > 0
+                    ? getAverageInventoryForMaterials(
+                        "S4",
+                        materialsByType.FG.map((m) => m.id),
+                      )
+                    : 0,
+                "S4-INT":
+                  materialsByType.Intermediate.length > 0
+                    ? getAverageInventoryForMaterials(
+                        "S4",
+                        materialsByType.Intermediate.map((m) => m.id),
+                      )
+                    : 0,
+                "S4-RAW":
+                  materialsByType.Raw.length > 0
+                    ? getAverageInventoryForMaterials(
+                        "S4",
+                        materialsByType.Raw.map((m) => m.id),
+                      )
+                    : 0,
+              },
+            ],
+            stacked: true,
+            materialNames: ["Finished Goods", "Intermediates", "Raw Materials"],
           }
-        })
+        }
+
+        // For individual materials or materials of the same type
+        const materialNames = selectedMaterialsInfo.map((m) => m.name)
+
+        return {
+          data: filterOptions.materials.map((materialId) => {
+            const material = materials.find((m) => m.id === materialId)
+            const materialName = material ? material.name : materialId
+            const materialType = material ? material.type : "Unknown"
+
+            // Get average inventory for this material across scenarios
+            const getAverageInventory = (scenario: Scenario, materialId: string) => {
+              if (!scenarioData?.inventoryData || !scenarioData.inventoryData[materialId]) return 0
+
+              const inventoryValues = scenarioData.inventoryData[materialId]
+              return inventoryValues.length > 0
+                ? Math.round(inventoryValues.reduce((a, b) => a + b, 0) / inventoryValues.length)
+                : 0
+            }
+
+            return {
+              name: `${materialName} (${materialType})`,
+              BASE: getAverageInventory("BASE", materialId),
+              S1: getAverageInventory("S1", materialId),
+              S2: getAverageInventory("S2", materialId),
+              S3: getAverageInventory("S3", materialId),
+              S4: getAverageInventory("S4", materialId),
+            }
+          }),
+          stacked: false,
+          materialNames: materialNames,
+        }
       } else {
         // Group materials by type
         const fgMaterials = materials.filter((m) => m.type === "FG").map((m) => m.id)
@@ -246,63 +397,233 @@ export default function Dashboard() {
           return count > 0 ? Math.round(sum / count) : 0
         }
 
-        return [
-          {
-            name: "Finished Goods",
-            BASE: getAverageInventory("BASE", fgMaterials),
-            S1: getAverageInventory("S1", fgMaterials),
-            S2: getAverageInventory("S2", fgMaterials),
-            S3: getAverageInventory("S3", fgMaterials),
-            S4: getAverageInventory("S4", fgMaterials),
-          },
-          {
-            name: "Intermediates",
-            BASE: getAverageInventory("BASE", intermediateMaterials),
-            S1: getAverageInventory("S1", intermediateMaterials),
-            S2: getAverageInventory("S2", intermediateMaterials),
-            S3: getAverageInventory("S3", intermediateMaterials),
-            S4: getAverageInventory("S4", intermediateMaterials),
-          },
-          {
-            name: "Raw Materials",
-            BASE: getAverageInventory("BASE", rawMaterials),
-            S1: getAverageInventory("S1", rawMaterials),
-            S2: getAverageInventory("S2", rawMaterials),
-            S3: getAverageInventory("S3", rawMaterials),
-            S4: getAverageInventory("S4", rawMaterials),
-          },
-        ]
+        return {
+          data: [
+            {
+              name: "Finished Goods",
+              BASE: getAverageInventory("BASE", fgMaterials),
+              S1: getAverageInventory("S1", fgMaterials),
+              S2: getAverageInventory("S2", fgMaterials),
+              S3: getAverageInventory("S3", fgMaterials),
+              S4: getAverageInventory("S4", fgMaterials),
+            },
+            {
+              name: "Intermediates",
+              BASE: getAverageInventory("BASE", intermediateMaterials),
+              S1: getAverageInventory("S1", intermediateMaterials),
+              S2: getAverageInventory("S2", intermediateMaterials),
+              S3: getAverageInventory("S3", intermediateMaterials),
+              S4: getAverageInventory("S4", intermediateMaterials),
+            },
+            {
+              name: "Raw Materials",
+              BASE: getAverageInventory("BASE", rawMaterials),
+              S1: getAverageInventory("S1", rawMaterials),
+              S2: getAverageInventory("S2", rawMaterials),
+              S3: getAverageInventory("S3", rawMaterials),
+              S4: getAverageInventory("S4", rawMaterials),
+            },
+          ],
+          stacked: false,
+          materialNames: ["Finished Goods", "Intermediates", "Raw Materials"],
+        }
       }
     } else if (scenarioComparisonType === "production") {
       // Use selected materials from filter if available
       if (filterOptions.materials.length > 0) {
-        return filterOptions.materials.map((materialId) => {
-          const material = materials.find((m) => m.id === materialId)
-          const materialName = material ? material.name : materialId
+        // Check if we have materials from different types (FG, Intermediate, Raw)
+        const selectedMaterialsInfo = filterOptions.materials.map(
+          (id) => materials.find((m) => m.id === id) || { id, name: id, type: "Unknown" },
+        )
 
-          // Calculate average production for this material across scenarios
-          const getAverageProduction = (scenario: Scenario, materialId: string) => {
+        const hasMultipleTypes = new Set(selectedMaterialsInfo.map((m) => m.type)).size > 1
+
+        if (hasMultipleTypes) {
+          // Group by material type for stacked bar chart
+          const materialsByType = {
+            FG: selectedMaterialsInfo.filter((m) => m.type === "FG"),
+            Intermediate: selectedMaterialsInfo.filter((m) => m.type === "Intermediate"),
+            Raw: selectedMaterialsInfo.filter((m) => m.type === "Raw"),
+          }
+
+          // Helper function to get average production
+          const getAverageProductionForMaterials = (scenario: Scenario, materialIds: string[]) => {
             if (!scenarioData?.productionData) return 0
 
-            const productionData = scenarioData.productionData.filter(
-              (item) => materialId in item && Number(item.week) >= weekRange[0] && Number(item.week) <= weekRange[1],
-            )
+            let sum = 0
+            let count = 0
 
-            if (productionData.length === 0) return 0
+            materialIds.forEach((materialId) => {
+              const productionData = scenarioData.productionData.filter(
+                (item) => materialId in item && Number(item.week) >= weekRange[0] && Number(item.week) <= weekRange[1],
+              )
 
-            const sum = productionData.reduce((total, item) => total + (Number(item[materialId]) || 0), 0)
-            return Math.round(sum / productionData.length)
+              if (productionData.length > 0) {
+                const materialSum = productionData.reduce((total, item) => total + (Number(item[materialId]) || 0), 0)
+                sum += materialSum / productionData.length
+                count++
+              }
+            })
+
+            return count > 0 ? Math.round(sum / count) : 0
           }
 
+          // Create data for stacked bar chart
           return {
-            name: materialName,
-            BASE: getAverageProduction("BASE", materialId),
-            S1: getAverageProduction("S1", materialId),
-            S2: getAverageProduction("S2", materialId),
-            S3: getAverageProduction("S3", materialId),
-            S4: getAverageProduction("S4", materialId),
+            data: [
+              {
+                name: "Production by Material Type",
+                "Finished Goods":
+                  materialsByType.FG.length > 0
+                    ? getAverageProductionForMaterials(
+                        "BASE",
+                        materialsByType.FG.map((m) => m.id),
+                      )
+                    : 0,
+                Intermediates:
+                  materialsByType.Intermediate.length > 0
+                    ? getAverageProductionForMaterials(
+                        "BASE",
+                        materialsByType.Intermediate.map((m) => m.id),
+                      )
+                    : 0,
+                "Raw Materials":
+                  materialsByType.Raw.length > 0
+                    ? getAverageProductionForMaterials(
+                        "BASE",
+                        materialsByType.Raw.map((m) => m.id),
+                      )
+                    : 0,
+
+                // Add other scenarios
+                "S1-FG":
+                  materialsByType.FG.length > 0
+                    ? getAverageProductionForMaterials(
+                        "S1",
+                        materialsByType.FG.map((m) => m.id),
+                      )
+                    : 0,
+                "S1-INT":
+                  materialsByType.Intermediate.length > 0
+                    ? getAverageProductionForMaterials(
+                        "S1",
+                        materialsByType.Intermediate.map((m) => m.id),
+                      )
+                    : 0,
+                "S1-RAW":
+                  materialsByType.Raw.length > 0
+                    ? getAverageProductionForMaterials(
+                        "S1",
+                        materialsByType.Raw.map((m) => m.id),
+                      )
+                    : 0,
+
+                "S2-FG":
+                  materialsByType.FG.length > 0
+                    ? getAverageProductionForMaterials(
+                        "S2",
+                        materialsByType.FG.map((m) => m.id),
+                      )
+                    : 0,
+                "S2-INT":
+                  materialsByType.Intermediate.length > 0
+                    ? getAverageProductionForMaterials(
+                        "S2",
+                        materialsByType.Intermediate.map((m) => m.id),
+                      )
+                    : 0,
+                "S2-RAW":
+                  materialsByType.Raw.length > 0
+                    ? getAverageProductionForMaterials(
+                        "S2",
+                        materialsByType.Raw.map((m) => m.id),
+                      )
+                    : 0,
+
+                "S3-FG":
+                  materialsByType.FG.length > 0
+                    ? getAverageProductionForMaterials(
+                        "S3",
+                        materialsByType.FG.map((m) => m.id),
+                      )
+                    : 0,
+                "S3-INT":
+                  materialsByType.Intermediate.length > 0
+                    ? getAverageProductionForMaterials(
+                        "S3",
+                        materialsByType.Intermediate.map((m) => m.id),
+                      )
+                    : 0,
+                "S3-RAW":
+                  materialsByType.Raw.length > 0
+                    ? getAverageProductionForMaterials(
+                        "S3",
+                        materialsByType.Raw.map((m) => m.id),
+                      )
+                    : 0,
+
+                "S4-FG":
+                  materialsByType.FG.length > 0
+                    ? getAverageProductionForMaterials(
+                        "S4",
+                        materialsByType.FG.map((m) => m.id),
+                      )
+                    : 0,
+                "S4-INT":
+                  materialsByType.Intermediate.length > 0
+                    ? getAverageProductionForMaterials(
+                        "S4",
+                        materialsByType.Intermediate.map((m) => m.id),
+                      )
+                    : 0,
+                "S4-RAW":
+                  materialsByType.Raw.length > 0
+                    ? getAverageProductionForMaterials(
+                        "S4",
+                        materialsByType.Raw.map((m) => m.id),
+                      )
+                    : 0,
+              },
+            ],
+            stacked: true,
+            materialNames: ["Finished Goods", "Intermediates", "Raw Materials"],
           }
-        })
+        }
+
+        const materialNames = selectedMaterialsInfo.map((m) => m.name)
+
+        return {
+          data: filterOptions.materials.map((materialId) => {
+            const material = materials.find((m) => m.id === materialId)
+            const materialName = material ? material.name : materialId
+            const materialType = material ? material.type : "Unknown"
+
+            // Calculate average production for this material across scenarios
+            const getAverageProduction = (scenario: Scenario, materialId: string) => {
+              if (!scenarioData?.productionData) return 0
+
+              const productionData = scenarioData.productionData.filter(
+                (item) => materialId in item && Number(item.week) >= weekRange[0] && Number(item.week) <= weekRange[1],
+              )
+
+              if (productionData.length === 0) return 0
+
+              const sum = productionData.reduce((total, item) => total + (Number(item[materialId]) || 0), 0)
+              return Math.round(sum / productionData.length)
+            }
+
+            return {
+              name: `${materialName} (${materialType})`,
+              BASE: getAverageProduction("BASE", materialId),
+              S1: getAverageProduction("S1", materialId),
+              S2: getAverageProduction("S2", materialId),
+              S3: getAverageProduction("S3", materialId),
+              S4: getAverageProduction("S4", materialId),
+            }
+          }),
+          stacked: false,
+          materialNames: materialNames,
+        }
       } else {
         // Use the first two materials (FG and Intermediate) for production comparison
         const fgMaterial = materials.find((m) => m.type === "FG")?.id || "3720579"
@@ -322,55 +643,94 @@ export default function Dashboard() {
           return Math.round(sum / productionData.length)
         }
 
-        return [
-          {
-            name: materials.find((m) => m.id === fgMaterial)?.name || "FG Material",
-            BASE: getAverageProduction("BASE", fgMaterial),
-            S1: getAverageProduction("S1", fgMaterial),
-            S2: getAverageProduction("S2", fgMaterial),
-            S3: getAverageProduction("S3", fgMaterial),
-            S4: getAverageProduction("S4", fgMaterial),
-          },
-          {
-            name: materials.find((m) => m.id === intermediateMaterial)?.name || "Intermediate Material",
-            BASE: getAverageProduction("BASE", intermediateMaterial),
-            S1: getAverageProduction("S1", intermediateMaterial),
-            S2: getAverageProduction("S2", intermediateMaterial),
-            S3: getAverageProduction("S3", intermediateMaterial),
-            S4: getAverageProduction("S4", intermediateMaterial),
-          },
-        ]
+        const fgName = materials.find((m) => m.id === fgMaterial)?.name || "FG Material"
+        const intName = materials.find((m) => m.id === intermediateMaterial)?.name || "Intermediate Material"
+
+        return {
+          data: [
+            {
+              name: `${fgName} (FG)`,
+              BASE: getAverageProduction("BASE", fgMaterial),
+              S1: getAverageProduction("S1", fgMaterial),
+              S2: getAverageProduction("S2", fgMaterial),
+              S3: getAverageProduction("S3", fgMaterial),
+              S4: getAverageProduction("S4", fgMaterial),
+            },
+            {
+              name: `${intName} (Intermediate)`,
+              BASE: getAverageProduction("BASE", intermediateMaterial),
+              S1: getAverageProduction("S1", intermediateMaterial),
+              S2: getAverageProduction("S2", intermediateMaterial),
+              S3: getAverageProduction("S3", intermediateMaterial),
+              S4: getAverageProduction("S4", intermediateMaterial),
+            },
+          ],
+          stacked: false,
+          materialNames: [fgName, intName],
+        }
       }
     }
 
     // Default to alerts
-    return [
-      {
-        name: "Critical Alerts",
-        BASE: alertSummary.BASE.critical,
-        S1: alertSummary.S1.critical,
-        S2: alertSummary.S2.critical,
-        S3: alertSummary.S3.critical,
-        S4: alertSummary.S4.critical,
-      },
-      {
-        name: "Capacity Alerts",
-        BASE: alertSummary.BASE.capacity,
-        S1: alertSummary.S1.capacity,
-        S2: alertSummary.S2.capacity,
-        S3: alertSummary.S3.capacity,
-        S4: alertSummary.S4.capacity,
-      },
-      {
-        name: "Supporting Alerts",
-        BASE: alertSummary.BASE.supporting,
-        S1: alertSummary.S1.supporting,
-        S2: alertSummary.S2.supporting,
-        S3: alertSummary.S3.supporting,
-        S4: alertSummary.S4.supporting,
-      },
-    ]
+    return {
+      data: [
+        {
+          name: "Critical Alerts",
+          BASE: alertSummary.BASE.critical,
+          S1: alertSummary.S1.critical,
+          S2: alertSummary.S2.critical,
+          S3: alertSummary.S3.critical,
+          S4: alertSummary.S4.critical,
+        },
+        {
+          name: "Capacity Alerts",
+          BASE: alertSummary.BASE.capacity,
+          S1: alertSummary.S1.capacity,
+          S2: alertSummary.S2.capacity,
+          S3: alertSummary.S3.capacity,
+          S4: alertSummary.S4.capacity,
+        },
+        {
+          name: "Supporting Alerts",
+          BASE: alertSummary.BASE.supporting,
+          S1: alertSummary.S1.supporting,
+          S2: alertSummary.S2.supporting,
+          S3: alertSummary.S3.supporting,
+          S4: alertSummary.S4.supporting,
+        },
+      ],
+      stacked: false,
+      materialNames: [],
+    }
   }
+
+  // Add this helper function for inventory calculations
+  const getAverageInventoryForMaterials = (scenario: Scenario, materialIds: string[]) => {
+    if (!scenarioData?.inventoryData) return 0
+
+    let sum = 0
+    let count = 0
+
+    materialIds.forEach((id) => {
+      if (scenarioData.inventoryData[id]) {
+        // Get average of all weeks
+        const avg = scenarioData.inventoryData[id].reduce((a, b) => a + b, 0) / scenarioData.inventoryData[id].length
+        sum += avg
+        count++
+      }
+    })
+
+    return count > 0 ? Math.round(sum / count) : 0
+  }
+
+  // Now update the BarChart component call in the JSX
+  // Find the BarChart component in the JSX and update it:
+
+  // Replace:
+  // <BarChart data={getScenarioComparisonData()} />
+
+  // With:
+  const comparisonData = getScenarioComparisonData()
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -667,7 +1027,11 @@ export default function Dashboard() {
                 </select>
               </CardHeader>
               <CardContent>
-                <BarChart data={getScenarioComparisonData()} />
+                <BarChart
+                  data={comparisonData.data}
+                  stacked={comparisonData.stacked}
+                  materialNames={comparisonData.materialNames}
+                />
                 <p className="text-xs text-gray-500 mt-2">
                   {scenarioComparisonType === "alerts"
                     ? "Comparing alert counts across scenarios"
