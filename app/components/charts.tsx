@@ -256,7 +256,10 @@ export function LineChart({
       }
     } else {
       // If no materials selected, show total inventory from timeSeriesData
-      inventoryData = chartData.filter((item) => Number(item.week) >= weekRange[0] && Number(item.week) <= weekRange[1])
+      inventoryData = chartData.filter(
+        (item: { week: string; inventory: number }) =>
+          Number(item.week) >= weekRange[0] && Number(item.week) <= weekRange[1],
+      )
     }
   }
 
