@@ -36,6 +36,8 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [currentAlerts, setCurrentAlerts] = useState<AlertData[]>([])
   const [changeLog, setChangeLog] = useState<any[]>([])
+  // Add state for scenario comparison type
+  const [scenarioComparisonType, setScenarioComparisonType] = useState("alerts")
 
   useEffect(() => {
     const loadData = async () => {
@@ -161,6 +163,213 @@ export default function Dashboard() {
 
       return transformedData
     })
+  }
+
+  // Function to generate scenario comparison data based on selected type and filters
+  const getScenarioComparisonData = () => {
+    if (scenarioComparisonType === "alerts") {
+      return [
+        {
+          name: "Critical Alerts",
+          BASE: alertSummary.BASE.critical,
+          S1: alertSummary.S1.critical,
+          S2: alertSummary.S2.critical,
+          S3: alertSummary.S3.critical,
+          S4: alertSummary.S4.critical,
+        },
+        {
+          name: "Capacity Alerts",
+          BASE: alertSummary.BASE.capacity,
+          S1: alertSummary.S1.capacity,
+          S2: alertSummary.S2.capacity,
+          S3: alertSummary.S3.capacity,
+          S4: alertSummary.S4.capacity,
+        },
+        {
+          name: "Supporting Alerts",
+          BASE: alertSummary.BASE.supporting,
+          S1: alertSummary.S1.supporting,
+          S2: alertSummary.S2.supporting,
+          S3: alertSummary.S3.supporting,
+          S4: alertSummary.S4.supporting,
+        },
+      ]
+    } else if (scenarioComparisonType === "materials") {
+      // Use selected materials from filter if available, otherwise group by type
+      if (filterOptions.materials.length > 0) {
+        return filterOptions.materials.map((materialId) => {
+          const material = materials.find((m) => m.id === materialId)
+          const materialName = material ? material.name : materialId
+
+          // Get average inventory for this material across scenarios
+          const getAverageInventory = (scenario: Scenario, materialId: string) => {
+            if (!scenarioData?.inventoryData || !scenarioData.inventoryData[materialId]) return 0
+
+            const inventoryValues = scenarioData.inventoryData[materialId]
+            return inventoryValues.length > 0
+              ? Math.round(inventoryValues.reduce((a, b) => a + b, 0) / inventoryValues.length)
+              : 0
+          }
+
+          return {
+            name: materialName,
+            BASE: getAverageInventory("BASE", materialId),
+            S1: getAverageInventory("S1", materialId),
+            S2: getAverageInventory("S2", materialId),
+            S3: getAverageInventory("S3", materialId),
+            S4: getAverageInventory("S4", materialId),
+          }
+        })
+      } else {
+        // Group materials by type
+        const fgMaterials = materials.filter((m) => m.type === "FG").map((m) => m.id)
+        const intermediateMaterials = materials.filter((m) => m.type === "Intermediate").map((m) => m.id)
+        const rawMaterials = materials.filter((m) => m.type === "Raw").map((m) => m.id)
+
+        // Calculate average inventory for each material type and scenario
+        const getAverageInventory = (scenario: Scenario, materialIds: string[]) => {
+          if (!scenarioData?.inventoryData) return 0
+
+          let sum = 0
+          let count = 0
+
+          materialIds.forEach((id) => {
+            if (scenarioData.inventoryData[id]) {
+              // Get average of all weeks
+              const avg =
+                scenarioData.inventoryData[id].reduce((a, b) => a + b, 0) / scenarioData.inventoryData[id].length
+              sum += avg
+              count++
+            }
+          })
+
+          return count > 0 ? Math.round(sum / count) : 0
+        }
+
+        return [
+          {
+            name: "Finished Goods",
+            BASE: getAverageInventory("BASE", fgMaterials),
+            S1: getAverageInventory("S1", fgMaterials),
+            S2: getAverageInventory("S2", fgMaterials),
+            S3: getAverageInventory("S3", fgMaterials),
+            S4: getAverageInventory("S4", fgMaterials),
+          },
+          {
+            name: "Intermediates",
+            BASE: getAverageInventory("BASE", intermediateMaterials),
+            S1: getAverageInventory("S1", intermediateMaterials),
+            S2: getAverageInventory("S2", intermediateMaterials),
+            S3: getAverageInventory("S3", intermediateMaterials),
+            S4: getAverageInventory("S4", intermediateMaterials),
+          },
+          {
+            name: "Raw Materials",
+            BASE: getAverageInventory("BASE", rawMaterials),
+            S1: getAverageInventory("S1", rawMaterials),
+            S2: getAverageInventory("S2", rawMaterials),
+            S3: getAverageInventory("S3", rawMaterials),
+            S4: getAverageInventory("S4", rawMaterials),
+          },
+        ]
+      }
+    } else if (scenarioComparisonType === "production") {
+      // Use selected materials from filter if available
+      if (filterOptions.materials.length > 0) {
+        return filterOptions.materials.map((materialId) => {
+          const material = materials.find((m) => m.id === materialId)
+          const materialName = material ? material.name : materialId
+
+          // Calculate average production for this material across scenarios
+          const getAverageProduction = (scenario: Scenario, materialId: string) => {
+            if (!scenarioData?.productionData) return 0
+
+            const productionData = scenarioData.productionData.filter(
+              (item) => materialId in item && Number(item.week) >= weekRange[0] && Number(item.week) <= weekRange[1],
+            )
+
+            if (productionData.length === 0) return 0
+
+            const sum = productionData.reduce((total, item) => total + (Number(item[materialId]) || 0), 0)
+            return Math.round(sum / productionData.length)
+          }
+
+          return {
+            name: materialName,
+            BASE: getAverageProduction("BASE", materialId),
+            S1: getAverageProduction("S1", materialId),
+            S2: getAverageProduction("S2", materialId),
+            S3: getAverageProduction("S3", materialId),
+            S4: getAverageProduction("S4", materialId),
+          }
+        })
+      } else {
+        // Use the first two materials (FG and Intermediate) for production comparison
+        const fgMaterial = materials.find((m) => m.type === "FG")?.id || "3720579"
+        const intermediateMaterial = materials.find((m) => m.type === "Intermediate")?.id || "3954706"
+
+        // Calculate average production for key materials across scenarios
+        const getAverageProduction = (scenario: Scenario, materialId: string) => {
+          if (!scenarioData?.productionData) return 0
+
+          const productionData = scenarioData.productionData.filter(
+            (item) => materialId in item && Number(item.week) >= weekRange[0] && Number(item.week) <= weekRange[1],
+          )
+
+          if (productionData.length === 0) return 0
+
+          const sum = productionData.reduce((total, item) => total + (Number(item[materialId]) || 0), 0)
+          return Math.round(sum / productionData.length)
+        }
+
+        return [
+          {
+            name: materials.find((m) => m.id === fgMaterial)?.name || "FG Material",
+            BASE: getAverageProduction("BASE", fgMaterial),
+            S1: getAverageProduction("S1", fgMaterial),
+            S2: getAverageProduction("S2", fgMaterial),
+            S3: getAverageProduction("S3", fgMaterial),
+            S4: getAverageProduction("S4", fgMaterial),
+          },
+          {
+            name: materials.find((m) => m.id === intermediateMaterial)?.name || "Intermediate Material",
+            BASE: getAverageProduction("BASE", intermediateMaterial),
+            S1: getAverageProduction("S1", intermediateMaterial),
+            S2: getAverageProduction("S2", intermediateMaterial),
+            S3: getAverageProduction("S3", intermediateMaterial),
+            S4: getAverageProduction("S4", intermediateMaterial),
+          },
+        ]
+      }
+    }
+
+    // Default to alerts
+    return [
+      {
+        name: "Critical Alerts",
+        BASE: alertSummary.BASE.critical,
+        S1: alertSummary.S1.critical,
+        S2: alertSummary.S2.critical,
+        S3: alertSummary.S3.critical,
+        S4: alertSummary.S4.critical,
+      },
+      {
+        name: "Capacity Alerts",
+        BASE: alertSummary.BASE.capacity,
+        S1: alertSummary.S1.capacity,
+        S2: alertSummary.S2.capacity,
+        S3: alertSummary.S3.capacity,
+        S4: alertSummary.S4.capacity,
+      },
+      {
+        name: "Supporting Alerts",
+        BASE: alertSummary.BASE.supporting,
+        S1: alertSummary.S1.supporting,
+        S2: alertSummary.S2.supporting,
+        S3: alertSummary.S3.supporting,
+        S4: alertSummary.S4.supporting,
+      },
+    ]
   }
 
   return (
@@ -442,39 +651,34 @@ export default function Dashboard() {
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>Scenario Comparison</CardTitle>
-                <p className="text-sm text-gray-500">Improvement from Base Plan to S4 (Fine Tuned Optimization)</p>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Scenario Comparison</CardTitle>
+                  <p className="text-sm text-gray-500">Improvement from Base Plan to S4 (Fine Tuned Optimization)</p>
+                </div>
+                <select
+                  className="px-3 py-1 border rounded-md"
+                  onChange={(e) => setScenarioComparisonType(e.target.value)}
+                  value={scenarioComparisonType}
+                >
+                  <option value="alerts">Alert Comparison</option>
+                  <option value="materials">Inventory by Material Type</option>
+                  <option value="production">Production by Material</option>
+                </select>
               </CardHeader>
               <CardContent>
-                <BarChart
-                  data={[
-                    {
-                      name: "Critical Alerts",
-                      BASE: alertSummary.BASE.critical,
-                      S1: alertSummary.S1.critical,
-                      S2: alertSummary.S2.critical,
-                      S3: alertSummary.S3.critical,
-                      S4: alertSummary.S4.critical,
-                    },
-                    {
-                      name: "Capacity Alerts",
-                      BASE: alertSummary.BASE.capacity,
-                      S1: alertSummary.S1.capacity,
-                      S2: alertSummary.S2.capacity,
-                      S3: alertSummary.S3.capacity,
-                      S4: alertSummary.S4.capacity,
-                    },
-                    {
-                      name: "Supporting Alerts",
-                      BASE: alertSummary.BASE.supporting,
-                      S1: alertSummary.S1.supporting,
-                      S2: alertSummary.S2.supporting,
-                      S3: alertSummary.S3.supporting,
-                      S4: alertSummary.S4.supporting,
-                    },
-                  ]}
-                />
+                <BarChart data={getScenarioComparisonData()} />
+                <p className="text-xs text-gray-500 mt-2">
+                  {scenarioComparisonType === "alerts"
+                    ? "Comparing alert counts across scenarios"
+                    : scenarioComparisonType === "materials"
+                      ? filterOptions.materials.length > 0
+                        ? `Comparing inventory levels for ${filterOptions.materials.length} selected material(s) across scenarios`
+                        : "Comparing average inventory levels by material type across scenarios"
+                      : filterOptions.materials.length > 0
+                        ? `Comparing production quantities for ${filterOptions.materials.length} selected material(s) across scenarios`
+                        : "Comparing average production quantities by material across scenarios"}
+                </p>
               </CardContent>
             </Card>
           </div>
