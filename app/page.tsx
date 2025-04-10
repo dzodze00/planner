@@ -1031,6 +1031,7 @@ export default function Dashboard() {
                   data={comparisonData.data}
                   stacked={comparisonData.stacked}
                   materialNames={comparisonData.materialNames}
+                  materials={materials}
                 />
                 <p className="text-xs text-gray-500 mt-2">
                   {scenarioComparisonType === "alerts"
