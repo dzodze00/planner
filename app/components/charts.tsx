@@ -57,7 +57,7 @@ const getMaterialName = (key: string, materialsArray: MaterialItem[] = []) => {
   return key
 }
 
-// Update the BarChart function signature:
+// Update the BarChart function to better handle production data
 export function BarChart({ data = [], compareData, scenario, compareScenario, materials = [] }: BarChartProps) {
   const colors = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"]
 
@@ -100,6 +100,9 @@ export function BarChart({ data = [], compareData, scenario, compareScenario, ma
 
   // If we have compareScenario, it's a comparison between two scenarios
   if (scenario && compareScenario && data.length > 0) {
+    // Get all material IDs from the data (excluding 'week')
+    const materialIds = Object.keys(data[0]).filter((key) => key !== "week")
+
     return (
       <ResponsiveContainer width="100%" height={300}>
         <RechartsBarChart
@@ -128,11 +131,9 @@ export function BarChart({ data = [], compareData, scenario, compareScenario, ma
               return material ? material.name : value
             }}
           />
-          {Object.keys(data[0])
-            .filter((key) => key !== "week")
-            .map((key, index) => (
-              <Bar key={`${scenario}-${key}`} dataKey={key} fill={colors[index % colors.length]} name={key} />
-            ))}
+          {materialIds.map((key, index) => (
+            <Bar key={`${scenario}-${key}`} dataKey={key} fill={colors[index % colors.length]} name={key} />
+          ))}
 
           {compareData &&
             compareData.length > 0 &&
@@ -167,10 +168,20 @@ export function BarChart({ data = [], compareData, scenario, compareScenario, ma
         }}
       >
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="name" />
+        <XAxis dataKey="week" />
         <YAxis />
-        <Tooltip />
-        <Legend />
+        <Tooltip
+          formatter={(value, name) => {
+            const material = materials.find((m) => m.id === name)
+            return [value, material ? material.name : name]
+          }}
+        />
+        <Legend
+          formatter={(value) => {
+            const material = materials.find((m) => m.id === value)
+            return material ? material.name : value
+          }}
+        />
         {data.length > 0 &&
           Object.keys(data[0])
             .filter((key) => key !== "name" && key !== "week")
@@ -202,8 +213,27 @@ export function LineChart({
   const chartData = data?.timeSeriesData || []
   const compareChartData = compareData?.timeSeriesData || []
 
+  // Get inventory data for selected material if applicable
+  let inventoryData = []
+  if (dataType === "inventory" && selectedMaterial && data?.inventoryData) {
+    const materialInventory = data.inventoryData[selectedMaterial]
+    if (materialInventory) {
+      // Convert inventory data to the format expected by the chart
+      inventoryData = materialInventory
+        .map((value, index) => ({
+          week: String(index + 14), // Assuming weeks start at 14
+          inventory: value,
+        }))
+        .filter((item) => Number(item.week) >= weekRange[0] && Number(item.week) <= weekRange[1])
+    }
+  }
+
+  // Use inventory data if available, otherwise use time series data
+  const displayData =
+    dataType === "inventory" && selectedMaterial && inventoryData.length > 0 ? inventoryData : chartData
+
   // If no data is available, show a message
-  if (chartData.length === 0) {
+  if (displayData.length === 0) {
     return (
       <div className="flex items-center justify-center h-[300px] bg-gray-50 rounded-md">
         <p className="text-gray-500">No data available</p>
@@ -264,6 +294,34 @@ export function LineChart({
 
     if (dataType === "inventory") {
       if (selectedMaterial) {
+        // Get comparison inventory data if available
+        let compareInventoryData = []
+        if (compareData?.inventoryData && compareData.inventoryData[selectedMaterial]) {
+          const materialInventory = compareData.inventoryData[selectedMaterial]
+          if (materialInventory) {
+            compareInventoryData = materialInventory
+              .map((value, index) => ({
+                week: String(index + 14),
+                inventory: value,
+              }))
+              .filter((item) => Number(item.week) >= weekRange[0] && Number(item.week) <= weekRange[1])
+          }
+        }
+
+        if (compareInventoryData.length > 0) {
+          return [
+            <Line
+              key="compare-inventory"
+              type="monotone"
+              dataKey="inventory"
+              stroke="#ff7300"
+              name={`${getMaterialName(selectedMaterial, materials)} Inventory (${compareScenario})`}
+              strokeDasharray="5 5"
+              data={compareInventoryData}
+            />,
+          ]
+        }
+
         return [
           <Line
             key="compare-inventory"
@@ -334,7 +392,7 @@ export function LineChart({
   return (
     <ResponsiveContainer width="100%" height={300}>
       <RechartsLineChart
-        data={chartData}
+        data={displayData}
         margin={{
           top: 5,
           right: 30,
