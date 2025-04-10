@@ -496,17 +496,16 @@ export default function Dashboard() {
                   <div className="flex items-center justify-center h-full">
                     <p>Loading production data...</p>
                   </div>
-                ) : scenarioData?.productionData?.length === 0 ? (
-                  <div className="flex items-center justify-center h-full">
-                    <p>No production data available for the selected filters</p>
-                  </div>
                 ) : (
-                  <BarChart
-                    data={transformProductionData(scenarioData?.productionData || [])}
-                    compareData={compareMode ? transformProductionData(compareData?.productionData || []) : undefined}
+                  <LineChart
                     scenario={activeScenario}
                     compareScenario={compareMode ? compareScenario : null}
+                    data={scenarioData}
+                    compareData={compareData}
+                    weekRange={weekRange}
+                    dataType="production"
                     materials={materials}
+                    filterOptions={filterOptions}
                   />
                 )}
               </CardContent>
