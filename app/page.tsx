@@ -51,11 +51,32 @@ export default function Dashboard() {
           setCompareData(null)
         }
 
-        // Set the current alerts for the active scenario
-        setCurrentAlerts(alertsData[activeScenario] || [])
+        // Set the current alerts for the active scenario, filtered by alert types and week range
+        const filteredAlerts = alertsData[activeScenario]
+          ? alertsData[activeScenario].filter((alert) => {
+              // Filter by alert type
+              if (!filterOptions.alertTypes.includes(alert.type)) {
+                return false
+              }
+
+              // Filter by week range
+              const alertWeek = Number(alert.week)
+              if (alertWeek < weekRange[0] || alertWeek > weekRange[1]) {
+                return false
+              }
+
+              // Filter by material if specified
+              if (filterOptions.materials.length > 0 && !filterOptions.materials.includes(alert.item)) {
+                return false
+              }
+
+              return true
+            })
+          : []
+
+        setCurrentAlerts(filteredAlerts)
       } catch (error) {
         console.error("Error loading data:", error)
-        // You could set an error state here if needed
       } finally {
         setIsLoading(false)
       }
@@ -118,25 +139,28 @@ export default function Dashboard() {
   const transformProductionData = (data: any[] | undefined) => {
     if (!data || data.length === 0) return []
 
-    // If we have filtered materials, make sure we're showing the right data
-    if (filterOptions.materials.length > 0) {
-      // Create a new array with the same structure but only including selected materials
-      return data.map((weekData) => {
-        const filteredData: any = { week: weekData.week }
+    // Create a new array with the same structure but only including selected materials or all materials if none selected
+    return data.map((weekData) => {
+      const transformedData: any = { week: weekData.week }
 
-        // Only include the selected materials
+      // If we have filtered materials, only include those
+      if (filterOptions.materials.length > 0) {
         filterOptions.materials.forEach((materialId) => {
           if (materialId in weekData) {
-            filteredData[materialId] = weekData[materialId]
+            transformedData[materialId] = weekData[materialId]
           }
         })
+      } else {
+        // Otherwise include all materials except 'week'
+        Object.keys(weekData).forEach((key) => {
+          if (key !== "week") {
+            transformedData[key] = weekData[key]
+          }
+        })
+      }
 
-        return filteredData
-      })
-    }
-
-    // If no materials are selected, include all materials
-    return data
+      return transformedData
+    })
   }
 
   return (
@@ -523,6 +547,7 @@ export default function Dashboard() {
                     dataType="inventory"
                     materials={materials}
                     selectedMaterial={filterOptions.materials.length === 1 ? filterOptions.materials[0] : undefined}
+                    filterOptions={filterOptions}
                   />
                 )}
               </CardContent>
