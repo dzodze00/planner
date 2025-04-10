@@ -25,13 +25,15 @@ interface MaterialItem {
   type: string
 }
 
-// Update the BarChart props interface:
+// Update the BarChartProps interface to include stacked and materialNames props:
 interface BarChartProps {
   data: any[]
   compareData?: any[]
   scenario?: Scenario
   compareScenario?: Scenario | null
   materials?: MaterialItem[] // Add materials prop
+  stacked?: boolean // Add stacked prop
+  materialNames?: string[] // Add materialNames prop
 }
 
 // Add this after the existing imports and before the LineChart component definition:
@@ -59,7 +61,15 @@ const getMaterialName = (key: string, materialsArray: MaterialItem[] = []) => {
 }
 
 // Update the BarChart function to better handle production data
-export function BarChart({ data = [], compareData, scenario, compareScenario, materials = [] }: BarChartProps) {
+export function BarChart({
+  data = [],
+  compareData,
+  scenario,
+  compareScenario,
+  materials = [],
+  stacked,
+  materialNames,
+}: BarChartProps) {
   const colors = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"]
 
   // Handle empty data case
@@ -167,6 +177,7 @@ export function BarChart({ data = [], compareData, scenario, compareScenario, ma
           left: 20,
           bottom: 5,
         }}
+        stackOffset={stacked ? "sign" : "none"}
       >
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="week" />
@@ -192,6 +203,7 @@ export function BarChart({ data = [], compareData, scenario, compareScenario, ma
                 dataKey={key}
                 fill={colors[index % colors.length]}
                 name={getMaterialName(key, materials)}
+                stackId={stacked ? "a" : undefined}
               />
             ))}
       </RechartsBarChart>
