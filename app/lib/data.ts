@@ -26,9 +26,28 @@ export async function fetchScenarioData(
     (d) => Number.parseInt(d.week) >= weekRange[0] && Number.parseInt(d.week) <= weekRange[1],
   )
 
+  // Filter production data by week range
   const filteredProductionData = scenarioProductionData.filter(
     (d) => Number.parseInt(d.week) >= weekRange[0] && Number.parseInt(d.week) <= weekRange[1],
   )
+
+  // Filter production data by selected materials if specified
+  const materialFilteredProductionData =
+    filterOptions.materials.length > 0
+      ? filteredProductionData.map((weekData) => {
+          // Create a new object with only the week and selected materials
+          const filteredWeekData: any = { week: weekData.week }
+
+          // Only include the selected materials
+          filterOptions.materials.forEach((materialId) => {
+            if (materialId in weekData) {
+              filteredWeekData[materialId] = weekData[materialId]
+            }
+          })
+
+          return filteredWeekData
+        })
+      : filteredProductionData
 
   // Filter by material if specified
   const filteredRawData =
@@ -58,7 +77,7 @@ export async function fetchScenarioData(
 
   return {
     timeSeriesData: filteredByFillRate,
-    productionData: filteredProductionData,
+    productionData: materialFilteredProductionData,
     inventoryData: filteredInventoryData,
     alertData: alertsDataSource[scenario] || [],
     kpiData: scenarioKpiData,
