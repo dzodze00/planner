@@ -217,6 +217,8 @@ export function LineChart({
 
   // Get inventory data for selected materials if applicable
   let inventoryData: Array<{ week: string; [key: string]: string | number }> = []
+  let productionData: Array<{ week: string; [key: string]: string | number }> = []
+
   if (dataType === "inventory" && data?.inventoryData) {
     if (filterOptions.materials.length > 0) {
       // For multiple selected materials
@@ -263,11 +265,62 @@ export function LineChart({
     }
   }
 
-  // Update the displayData logic to handle the new inventory data format
-  const displayData = dataType === "inventory" && inventoryData.length > 0 ? inventoryData : chartData
+  // Handle production data
+  if (dataType === "production" && data?.productionData) {
+    // Filter production data by week range
+    const filteredProductionData = data.productionData.filter(
+      (item: { week: string }) => Number(item.week) >= weekRange[0] && Number(item.week) <= weekRange[1],
+    )
+
+    if (filterOptions.materials.length > 0) {
+      // For selected materials, create a data point for each week
+      productionData = filteredProductionData.map((weekData: any) => {
+        const transformedData: { week: string; [key: string]: string | number } = { week: weekData.week }
+
+        // Add production for each selected material
+        filterOptions.materials.forEach((materialId) => {
+          if (materialId in weekData) {
+            const materialName = getMaterialName(materialId, materials)
+            transformedData[materialName] = weekData[materialId]
+          }
+        })
+
+        return transformedData
+      })
+    } else {
+      // If no materials selected, include all materials except 'week'
+      productionData = filteredProductionData.map((weekData: any) => {
+        const transformedData: { week: string; [key: string]: string | number } = { week: weekData.week }
+
+        Object.keys(weekData).forEach((key) => {
+          if (key !== "week") {
+            const materialName = getMaterialName(key, materials)
+            transformedData[materialName] = weekData[key]
+          }
+        })
+
+        return transformedData
+      })
+    }
+  }
+
+  // Update the displayData logic to handle the new data formats
+  let displayData: any[] = chartData
+  if (dataType === "inventory" && inventoryData.length > 0) {
+    displayData = inventoryData
+  } else if (dataType === "production" && productionData.length > 0) {
+    displayData = productionData
+  }
+
+  // Filter displayData by week range if not already filtered
+  if (dataType !== "inventory" && dataType !== "production") {
+    displayData = displayData.filter(
+      (item: { week: string }) => Number(item.week) >= weekRange[0] && Number(item.week) <= weekRange[1],
+    )
+  }
 
   // If no data is available, show a message
-  if (displayData.length === 0) {
+  if (!displayData || displayData.length === 0) {
     return (
       <div className="flex items-center justify-center h-[300px] bg-gray-50 rounded-md">
         <p className="text-gray-500">No data available</p>
@@ -318,15 +371,36 @@ export function LineChart({
     }
 
     if (dataType === "production") {
-      return [
-        <Line
-          key="production"
-          type="monotone"
-          dataKey="supply" // Use supply as production
-          stroke="#82ca9d"
-          name={`Production (${scenario})`}
-        />,
-      ]
+      if (filterOptions.materials.length > 0) {
+        // For multiple materials, create a line for each material
+        return filterOptions.materials.map((materialId) => {
+          const materialName = getMaterialName(materialId, materials)
+          return (
+            <Line
+              key={`production-${materialId}`}
+              type="monotone"
+              dataKey={materialName}
+              stroke={`#${Math.floor(Math.random() * 16777215).toString(16)}`} // Random color
+              name={`${materialName} Production (${scenario})`}
+            />
+          )
+        })
+      } else {
+        // If no materials selected, show lines for all materials in the data
+        const materialKeys = Object.keys(displayData[0] || {}).filter((key) => key !== "week")
+        return materialKeys.map((key, index) => {
+          const colors = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"]
+          return (
+            <Line
+              key={`production-${key}`}
+              type="monotone"
+              dataKey={key}
+              stroke={colors[index % colors.length]}
+              name={`${key} Production (${scenario})`}
+            />
+          )
+        })
+      }
     }
 
     // Default: demand-supply
@@ -338,7 +412,7 @@ export function LineChart({
 
   // Get comparison lines if compareScenario is provided
   const getComparisonLines = () => {
-    if (!compareScenario || compareChartData.length === 0) return []
+    if (!compareScenario || !compareData) return []
 
     if (dataType === "inventory") {
       if (selectedMaterial) {
@@ -398,16 +472,42 @@ export function LineChart({
     }
 
     if (dataType === "production") {
-      return [
-        <Line
-          key="compare-production"
-          type="monotone"
-          dataKey="supply" // Use supply as production
-          stroke="#ff7300"
-          name={`Production (${compareScenario})`}
-          strokeDasharray="5 5"
-        />,
-      ]
+      // Similar approach as getLines for production
+      if (filterOptions.materials.length > 0) {
+        return filterOptions.materials.map((materialId) => {
+          const materialName = getMaterialName(materialId, materials)
+          return (
+            <Line
+              key={`compare-production-${materialId}`}
+              type="monotone"
+              dataKey={materialName}
+              stroke={`#${Math.floor(Math.random() * 16777215).toString(16)}`}
+              name={`${materialName} Production (${compareScenario})`}
+              strokeDasharray="5 5"
+            />
+          )
+        })
+      } else {
+        // If no materials selected, show lines for all materials in the compare data
+        const compareProductionData = compareData.productionData || []
+        if (compareProductionData.length > 0) {
+          const materialKeys = Object.keys(compareProductionData[0] || {}).filter((key) => key !== "week")
+          return materialKeys.map((key, index) => {
+            const colors = ["#ff7300", "#ff9e00", "#ffb700", "#ffd000", "#ffe900"]
+            return (
+              <Line
+                key={`compare-production-${key}`}
+                type="monotone"
+                dataKey={key}
+                stroke={colors[index % colors.length]}
+                name={`${key} Production (${compareScenario})`}
+                strokeDasharray="5 5"
+              />
+            )
+          })
+        }
+      }
+      return []
     }
 
     // Default: demand-supply
