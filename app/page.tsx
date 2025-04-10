@@ -115,7 +115,7 @@ export default function Dashboard() {
   console.log("Scenario Data:", scenarioData?.timeSeriesData?.length || 0, "items")
 
   // Add a helper function to transform production data for better visualization
-  const transformProductionData = (data: any[]) => {
+  const transformProductionData = (data: any[] | undefined) => {
     if (!data || data.length === 0) return []
 
     // If we have filtered materials, make sure we're showing the right data
@@ -467,7 +467,7 @@ export default function Dashboard() {
                 ) : (
                   <BarChart
                     data={transformProductionData(scenarioData?.productionData || [])}
-                    compareData={compareMode ? transformProductionData(compareData?.productionData) : undefined}
+                    compareData={compareMode ? transformProductionData(compareData?.productionData || []) : undefined}
                     scenario={activeScenario}
                     compareScenario={compareMode ? compareScenario : null}
                     materials={materials}
