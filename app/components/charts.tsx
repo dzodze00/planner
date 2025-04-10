@@ -44,6 +44,7 @@ interface LineChartProps {
   dataType?: "demand-supply" | "inventory" | "production"
   materials?: MaterialItem[] // Add materials prop
   selectedMaterial?: string // Add selectedMaterial prop
+  filterOptions?: { materials: string[] }
 }
 
 // Helper function to get material name
@@ -208,32 +209,59 @@ export function LineChart({
   dataType = "demand-supply",
   materials = [],
   selectedMaterial,
+  filterOptions = { materials: [] },
 }: LineChartProps) {
   // Use the actual data from props instead of mockData
   const chartData = data?.timeSeriesData || []
   const compareChartData = compareData?.timeSeriesData || []
 
-  // Get inventory data for selected material if applicable
-  let inventoryData: Array<{ week: string; inventory: number }> = []
-  if (dataType === "inventory" && selectedMaterial && data?.inventoryData) {
-    const materialInventory = data.inventoryData[selectedMaterial]
-    if (materialInventory) {
-      // Convert inventory data to the format expected by the chart
-      inventoryData = materialInventory
-        .map((value: number, index: number) => ({
-          week: String(index + 14), // Assuming weeks start at 14
-          inventory: value,
-        }))
-        .filter(
-          (item: { week: string; inventory: number }) =>
-            Number(item.week) >= weekRange[0] && Number(item.week) <= weekRange[1],
-        )
+  // Get inventory data for selected materials if applicable
+  let inventoryData: Array<{ week: string; [key: string]: string | number }> = []
+  if (dataType === "inventory" && data?.inventoryData) {
+    if (filterOptions.materials.length > 0) {
+      // For multiple selected materials
+      // Create a data point for each week with inventory values for each selected material
+      const weeks = Array.from({ length: weekRange[1] - weekRange[0] + 1 }, (_, i) => String(i + weekRange[0]))
+
+      inventoryData = weeks.map((week) => {
+        const weekData: { week: string; [key: string]: string | number } = { week }
+
+        // Add inventory for each selected material
+        filterOptions.materials.forEach((materialId) => {
+          if (data.inventoryData[materialId]) {
+            const weekIndex = Number(week) - 14 // Assuming weeks start at 14
+            if (weekIndex >= 0 && weekIndex < data.inventoryData[materialId].length) {
+              const materialName = getMaterialName(materialId, materials)
+              weekData[materialName] = data.inventoryData[materialId][weekIndex]
+            }
+          }
+        })
+
+        return weekData
+      })
+    } else if (selectedMaterial) {
+      // For a single selected material (keep existing logic)
+      const materialInventory = data.inventoryData[selectedMaterial]
+      if (materialInventory) {
+        // Convert inventory data to the format expected by the chart
+        inventoryData = materialInventory
+          .map((value: number, index: number) => ({
+            week: String(index + 14), // Assuming weeks start at 14
+            inventory: value,
+          }))
+          .filter(
+            (item: { week: string; inventory: number }) =>
+              Number(item.week) >= weekRange[0] && Number(item.week) <= weekRange[1],
+          )
+      }
+    } else {
+      // If no materials selected, show total inventory from timeSeriesData
+      inventoryData = chartData.filter((item) => Number(item.week) >= weekRange[0] && Number(item.week) <= weekRange[1])
     }
   }
 
-  // Use inventory data if available, otherwise use time series data
-  const displayData =
-    dataType === "inventory" && selectedMaterial && inventoryData.length > 0 ? inventoryData : chartData
+  // Update the displayData logic to handle the new inventory data format
+  const displayData = dataType === "inventory" && inventoryData.length > 0 ? inventoryData : chartData
 
   // If no data is available, show a message
   if (displayData.length === 0) {
@@ -247,7 +275,21 @@ export function LineChart({
   // Determine which lines to show based on dataType
   const getLines = () => {
     if (dataType === "inventory") {
-      if (selectedMaterial) {
+      if (filterOptions.materials.length > 0) {
+        // For multiple materials, create a line for each material
+        return filterOptions.materials.map((materialId) => {
+          const materialName = getMaterialName(materialId, materials)
+          return (
+            <Line
+              key={`inventory-${materialId}`}
+              type="monotone"
+              dataKey={materialName}
+              stroke={`#${Math.floor(Math.random() * 16777215).toString(16)}`} // Random color
+              name={`${materialName} Inventory (${scenario})`}
+            />
+          )
+        })
+      } else if (selectedMaterial) {
         // If a specific material is selected, show its inventory
         return [
           <Line
