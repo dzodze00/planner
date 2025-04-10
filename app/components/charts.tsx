@@ -114,17 +114,24 @@ export function BarChart({ data = [], compareData, scenario, compareScenario, ma
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="week" />
           <YAxis />
-          <Tooltip />
-          <Legend />
+          <Tooltip
+            formatter={(value, name) => {
+              // Try to find material name
+              const material = materials.find((m) => m.id === name)
+              return [value, material ? material.name : name]
+            }}
+          />
+          <Legend
+            formatter={(value) => {
+              // Try to find material name for legend
+              const material = materials.find((m) => m.id === value)
+              return material ? material.name : value
+            }}
+          />
           {Object.keys(data[0])
             .filter((key) => key !== "week")
             .map((key, index) => (
-              <Bar
-                key={`${scenario}-${key}`}
-                dataKey={key}
-                fill={colors[index % colors.length]}
-                name={getMaterialName(key, materials)}
-              />
+              <Bar key={`${scenario}-${key}`} dataKey={key} fill={colors[index % colors.length]} name={key} />
             ))}
 
           {compareData &&
@@ -136,7 +143,7 @@ export function BarChart({ data = [], compareData, scenario, compareScenario, ma
                   key={`${compareScenario}-${key}`}
                   dataKey={key}
                   fill={colors[(index + 2) % colors.length]}
-                  name={`${getMaterialName(key, materials)} (${compareScenario})`}
+                  name={`${key} (${compareScenario})`}
                   fillOpacity={0.7}
                   stroke={colors[(index + 2) % colors.length]}
                   strokeWidth={2}
@@ -207,15 +214,29 @@ export function LineChart({
   // Determine which lines to show based on dataType
   const getLines = () => {
     if (dataType === "inventory") {
-      return [
-        <Line
-          key="inventory"
-          type="monotone"
-          dataKey="inventory"
-          stroke="#ffc658"
-          name={`Planned Inventory (${scenario})`}
-        />,
-      ]
+      if (selectedMaterial) {
+        // If a specific material is selected, show its inventory
+        return [
+          <Line
+            key="inventory"
+            type="monotone"
+            dataKey="inventory"
+            stroke="#ffc658"
+            name={`${getMaterialName(selectedMaterial, materials)} Inventory (${scenario})`}
+          />,
+        ]
+      } else {
+        // If multiple materials are selected or none, show total inventory
+        return [
+          <Line
+            key="inventory"
+            type="monotone"
+            dataKey="inventory"
+            stroke="#ffc658"
+            name={`Total Inventory (${scenario})`}
+          />,
+        ]
+      }
     }
 
     if (dataType === "production") {
@@ -242,16 +263,29 @@ export function LineChart({
     if (!compareScenario || compareChartData.length === 0) return []
 
     if (dataType === "inventory") {
-      return [
-        <Line
-          key="compare-inventory"
-          type="monotone"
-          dataKey="inventory"
-          stroke="#ff7300"
-          name={`Planned Inventory (${compareScenario})`}
-          strokeDasharray="5 5"
-        />,
-      ]
+      if (selectedMaterial) {
+        return [
+          <Line
+            key="compare-inventory"
+            type="monotone"
+            dataKey="inventory"
+            stroke="#ff7300"
+            name={`${getMaterialName(selectedMaterial, materials)} Inventory (${compareScenario})`}
+            strokeDasharray="5 5"
+          />,
+        ]
+      } else {
+        return [
+          <Line
+            key="compare-inventory"
+            type="monotone"
+            dataKey="inventory"
+            stroke="#ff7300"
+            name={`Total Inventory (${compareScenario})`}
+            strokeDasharray="5 5"
+          />,
+        ]
+      }
     }
 
     if (dataType === "production") {
