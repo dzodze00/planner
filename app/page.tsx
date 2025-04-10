@@ -120,10 +120,22 @@ export default function Dashboard() {
 
     // If we have filtered materials, make sure we're showing the right data
     if (filterOptions.materials.length > 0) {
-      return data
+      // Create a new array with the same structure but only including selected materials
+      return data.map((weekData) => {
+        const filteredData: any = { week: weekData.week }
+
+        // Only include the selected materials
+        filterOptions.materials.forEach((materialId) => {
+          if (materialId in weekData) {
+            filteredData[materialId] = weekData[materialId]
+          }
+        })
+
+        return filteredData
+      })
     }
 
-    // Otherwise, show all materials
+    // If no materials are selected, include all materials
     return data
   }
 
