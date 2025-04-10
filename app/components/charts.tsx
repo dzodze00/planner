@@ -224,7 +224,10 @@ export function LineChart({
           week: String(index + 14), // Assuming weeks start at 14
           inventory: value,
         }))
-        .filter((item) => Number(item.week) >= weekRange[0] && Number(item.week) <= weekRange[1])
+        .filter(
+          (item: { week: string; inventory: number }) =>
+            Number(item.week) >= weekRange[0] && Number(item.week) <= weekRange[1],
+        )
     }
   }
 
@@ -304,7 +307,10 @@ export function LineChart({
                 week: String(index + 14),
                 inventory: value,
               }))
-              .filter((item) => Number(item.week) >= weekRange[0] && Number(item.week) <= weekRange[1])
+              .filter(
+                (item: { week: string; inventory: number }) =>
+                  Number(item.week) >= weekRange[0] && Number(item.week) <= weekRange[1],
+              )
           }
         }
 
