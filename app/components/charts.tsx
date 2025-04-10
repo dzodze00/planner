@@ -214,13 +214,13 @@ export function LineChart({
   const compareChartData = compareData?.timeSeriesData || []
 
   // Get inventory data for selected material if applicable
-  let inventoryData = []
+  let inventoryData: Array<{ week: string; inventory: number }> = []
   if (dataType === "inventory" && selectedMaterial && data?.inventoryData) {
     const materialInventory = data.inventoryData[selectedMaterial]
     if (materialInventory) {
       // Convert inventory data to the format expected by the chart
       inventoryData = materialInventory
-        .map((value, index) => ({
+        .map((value: number, index: number) => ({
           week: String(index + 14), // Assuming weeks start at 14
           inventory: value,
         }))
@@ -295,12 +295,12 @@ export function LineChart({
     if (dataType === "inventory") {
       if (selectedMaterial) {
         // Get comparison inventory data if available
-        let compareInventoryData = []
+        let compareInventoryData: Array<{ week: string; inventory: number }> = []
         if (compareData?.inventoryData && compareData.inventoryData[selectedMaterial]) {
           const materialInventory = compareData.inventoryData[selectedMaterial]
           if (materialInventory) {
             compareInventoryData = materialInventory
-              .map((value, index) => ({
+              .map((value: number, index: number) => ({
                 week: String(index + 14),
                 inventory: value,
               }))
